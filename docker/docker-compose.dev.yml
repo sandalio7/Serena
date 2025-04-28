@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_ENV=development
+      - DATABASE_URL=sqlite:///instance/app.db
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - VERIFY_TOKEN=${VERIFY_TOKEN}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    volumes:
+      - ../backend:/app
+      - sqlite-data:/app/instance
+    networks:
+      - serena-network
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - serena-network
+
+networks:
+  serena-network:
+    driver: bridge
+
+volumes:
+  sqlite-data:
