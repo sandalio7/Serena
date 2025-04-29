@@ -1,0 +1,125 @@
+{
+  "categorias": [
+    {
+      "nombre": "Salud Física",
+      "detectada": true,
+      "subcategorias": [
+        {
+          "nombre": "Movilidad",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Alimentación",
+          "detectada": true,
+          "valor": "Tomó un vaso de leche en el desayuno y se negó a almorzar.",
+          "confianza": 0.95
+        },
+        {
+          "nombre": "Sueño",
+          "detectada": true,
+          "valor": "No pudo dormir bien anoche, estuvo inquieto.",
+          "confianza": 0.95
+        },
+        {
+          "nombre": "Síntomas",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        }
+      ]
+    },
+    {
+      "nombre": "Salud Cognitiva",
+      "detectada": true,
+      "subcategorias": [
+        {
+          "nombre": "Memoria",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Orientación",
+          "detectada": true,
+          "valor": "Parece desorientado, preguntando varias veces qué día es hoy.",
+          "confianza": 0.95
+        },
+        {
+          "nombre": "Comunicación",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        }
+      ]
+    },
+    {
+      "nombre": "Estado Emocional",
+      "detectada": true,
+      "subcategorias": [
+        {
+          "nombre": "Humor",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Sociabilidad",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Agitación",
+          "detectada": true,
+          "valor": "Estuvo inquieto.",
+          "confianza": 0.85
+        }
+      ]
+    },
+    {
+      "nombre": "Medicación",
+      "detectada": false,
+      "subcategorias": [
+        {
+          "nombre": "Adherencia",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Efectos",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        }
+      ]
+    },
+    {
+      "nombre": "Gastos",
+      "detectada": false,
+      "subcategorias": [
+        {
+          "nombre": "Medicamentos",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Servicios",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Otros",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        }
+      ]
+    }
+  ],
+  "resumen": "José presenta problemas de sueño, alimentación reducida y signos de desorientación, con inquietud."
+}

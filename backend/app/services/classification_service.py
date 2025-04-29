@@ -1,74 +1,129 @@
-# backend/app/services/classification_service.py
-import json
-from ..extensions import db
-from ..models.message import Message
-from ..models.classified_data import ClassifiedData
-from ..models.caregiver import Caregiver
-from .gemini_service import classify_message, extract_data_by_category
+import logging
+from datetime import datetime
+from app.extensions import db
+from app.models.message import Message
+from app.models.classified_data import ClassifiedData
+from app.services.gemini_service import GeminiService
 
-def process_whatsapp_message(message_content, whatsapp_message_id, phone_number):
+# Configuración de logging
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class ClassificationService:
     """
-    Procesa un mensaje de WhatsApp: clasifica el contenido y guarda los resultados
+    Servicio para gestionar la clasificación de mensajes y 
+    almacenamiento de datos clasificados
+    """
     
-    Args:
-        message_content (str): Contenido del mensaje
-        whatsapp_message_id (str): ID del mensaje en WhatsApp
-        phone_number (str): Número de teléfono del remitente
+    def __init__(self):
+        """Inicializa el servicio de clasificación"""
+        self.gemini_service = GeminiService()
+    
+    def process_message(self, message_text, phone_number, patient_id=None):
+        """
+        Procesa un mensaje recibido: lo guarda, clasifica y almacena resultados
         
-    Returns:
-        tuple: (estado, mensaje, datos_clasificados)
-    """
-    try:
-        # 1. Buscar el cuidador por número de teléfono
-        caregiver = Caregiver.get_by_phone(phone_number)
-        if not caregiver:
-            return False, f"No se encontró un cuidador registrado con el número {phone_number}", None
+        Args:
+            message_text (str): Texto del mensaje
+            phone_number (str): Número de teléfono del remitente
+            patient_id (int, optional): ID del paciente asociado
+            
+        Returns:
+            dict: Datos procesados y resultados de la clasificación
+        """
+        try:
+            # 1. Guardar mensaje original
+            message = Message(
+                text=message_text,
+                phone_number=phone_number,
+                patient_id=patient_id,
+                received_at=datetime.utcnow()
+            )
+            db.session.add(message)
+            db.session.commit()
+            logger.info(f"Mensaje guardado con ID: {message.id}")
+            
+            # 2. Clasificar mensaje
+            classification_result = self.gemini_service.classify_message(message_text)
+            logger.info(f"Mensaje clasificado: {len(classification_result.get('categorias', []))} categorías detectadas")
+            
+            # 3. Guardar datos clasificados
+            if "error" not in classification_result:
+                self._save_classification_data(message.id, classification_result)
+                logger.info(f"Datos clasificados guardados para el mensaje ID: {message.id}")
+            else:
+                logger.error(f"Error en clasificación para mensaje ID {message.id}: {classification_result.get('error')}")
+            
+            return {
+                "message_id": message.id,
+                "classification": classification_result,
+                "status": "error" if "error" in classification_result else "success"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error procesando mensaje: {str(e)}")
+            return {
+                "error": str(e),
+                "status": "error"
+            }
+    
+    def _save_classification_data(self, message_id, classification_data):
+        """
+        Guarda los datos clasificados en la base de datos
         
-        # 2. Verificar si ya existe un mensaje con este ID
-        existing_message = Message.query.filter_by(whatsapp_message_id=whatsapp_message_id).first()
-        if existing_message:
-            return False, "Este mensaje ya ha sido procesado anteriormente", None
+        Args:
+            message_id (int): ID del mensaje original
+            classification_data (dict): Datos clasificados
+        """
+        try:
+            # Obtener resumen
+            resumen = classification_data.get("resumen", "")
+            
+            # Procesar cada categoría detectada
+            for categoria in classification_data.get("categorias", []):
+                if not categoria.get("detectada", False):
+                    continue
+                    
+                categoria_nombre = categoria.get("nombre", "")
+                
+                # Procesar subcategorías
+                for subcategoria in categoria.get("subcategorias", []):
+                    if not subcategoria.get("detectada", False):
+                        continue
+                        
+                    subcategoria_nombre = subcategoria.get("nombre", "")
+                    valor = subcategoria.get("valor", "")
+                    confianza = subcategoria.get("confianza", 0.0)
+                    
+                    # Crear registro de datos clasificados
+                    classified_data = ClassifiedData(
+                        message_id=message_id,
+                        category=categoria_nombre,
+                        subcategory=subcategoria_nombre,
+                        value=valor,
+                        confidence=confianza,
+                        summary=resumen
+                    )
+                    db.session.add(classified_data)
+            
+            db.session.commit()
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error guardando datos clasificados: {str(e)}")
+            raise
+    
+    def get_patient_classification_summary(self, patient_id, days=7):
+        """
+        Obtiene un resumen de los datos clasificados de un paciente
         
-        # 3. Crear nuevo mensaje
-        message = Message(
-            content=message_content,
-            whatsapp_message_id=whatsapp_message_id,
-            caregiver_id=caregiver.id,
-            patient_id=caregiver.patient_id
-        )
-        db.session.add(message)
-        db.session.flush()  # Para obtener el ID sin hacer commit
-        
-        # 4. Clasificar el mensaje con Gemini AI
-        classified_data_raw = classify_message(message_content)
-        
-        # 5. Extraer datos por categoría
-        physical_health = extract_data_by_category(classified_data_raw, "Salud Física")
-        cognitive_health = extract_data_by_category(classified_data_raw, "Salud Cognitiva")
-        emotional_state = extract_data_by_category(classified_data_raw, "Estado Emocional")
-        medication = extract_data_by_category(classified_data_raw, "Medicación")
-        expenses = extract_data_by_category(classified_data_raw, "Gastos")
-        
-        # 6. Crear registro de datos clasificados
-        classified_data = ClassifiedData(
-            raw_data=json.dumps(classified_data_raw),
-            physical_health=json.dumps(physical_health) if physical_health['detectada'] else None,
-            cognitive_health=json.dumps(cognitive_health) if cognitive_health['detectada'] else None,
-            emotional_state=json.dumps(emotional_state) if emotional_state['detectada'] else None,
-            medication=json.dumps(medication) if medication['detectada'] else None,
-            expenses=json.dumps(expenses) if expenses['detectada'] else None,
-            summary=classified_data_raw.get('resumen', ''),
-            message_id=message.id,
-            patient_id=caregiver.patient_id
-        )
-        db.session.add(classified_data)
-        
-        # 7. Guardar cambios en la base de datos
-        db.session.commit()
-        
-        return True, "Mensaje procesado y clasificado correctamente", classified_data
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error procesando mensaje: {str(e)}")
-        return False, f"Error procesando mensaje: {str(e)}", None
+        Args:
+            patient_id (int): ID del paciente
+            days (int): Número de días para el resumen
+            
+        Returns:
+            dict: Resumen de los datos clasificados
+        """
+        # Este método se implementará en el futuro para obtener datos para el dashboard
+        pass

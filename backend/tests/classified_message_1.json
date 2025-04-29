@@ -1,0 +1,125 @@
+{
+  "categorias": [
+    {
+      "nombre": "Salud Física",
+      "detectada": true,
+      "subcategorias": [
+        {
+          "nombre": "Movilidad",
+          "detectada": true,
+          "valor": "Caminó unos 100 pasos hasta el jardín",
+          "confianza": 0.95
+        },
+        {
+          "nombre": "Alimentación",
+          "detectada": true,
+          "valor": "comió bien el almuerzo",
+          "confianza": 0.9
+        },
+        {
+          "nombre": "Sueño",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Síntomas",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.1
+        }
+      ]
+    },
+    {
+      "nombre": "Salud Cognitiva",
+      "detectada": false,
+      "subcategorias": [
+        {
+          "nombre": "Memoria",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Orientación",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Comunicación",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        }
+      ]
+    },
+    {
+      "nombre": "Estado Emocional",
+      "detectada": false,
+      "subcategorias": [
+        {
+          "nombre": "Humor",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Sociabilidad",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Agitación",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        }
+      ]
+    },
+    {
+      "nombre": "Medicación",
+      "detectada": true,
+      "subcategorias": [
+        {
+          "nombre": "Adherencia",
+          "detectada": true,
+          "valor": "Sigue olvidando tomar su medicamento para la presión, tuve que recordárselo tres veces.",
+          "confianza": 0.95
+        },
+        {
+          "nombre": "Efectos",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.1
+        }
+      ]
+    },
+    {
+      "nombre": "Gastos",
+      "detectada": true,
+      "subcategorias": [
+        {
+          "nombre": "Medicamentos",
+          "detectada": true,
+          "valor": "45€",
+          "confianza": 0.95
+        },
+        {
+          "nombre": "Servicios",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        },
+        {
+          "nombre": "Otros",
+          "detectada": false,
+          "valor": null,
+          "confianza": 0.0
+        }
+      ]
+    }
+  ],
+  "resumen": "María tuvo una ligera mejora en su movilidad y comió bien, pero olvidó tomar su medicamento. Se gastaron 45€ en medicamentos."
+}
