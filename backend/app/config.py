@@ -1,14 +1,19 @@
 # backend/app/config.py
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Cargar variables de entorno del archivo .env
 load_dotenv()
 
+# Obtener la ruta base del proyecto
+basedir = Path(__file__).parent.parent.absolute()
+db_path = basedir / "instance" / "serena.db"
+
 class Config:
     """Configuración base para la aplicación Flask"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-insegura-cambiar'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///instance/serena.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{db_path}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
     
