@@ -11,7 +11,7 @@ sequenceDiagram
     participant Twilio as Twilio/MessageBird
     participant Flask as Backend Flask
     participant Gemini as Google Gemini AI
-    participant MongoDB
+    participant SQLite
     participant React as Frontend React
     participant Usuario
 
@@ -20,7 +20,7 @@ sequenceDiagram
     Cuidador->>WhatsApp: Envía mensaje sobre paciente
     WhatsApp->>Twilio: Entrega mensaje
     Twilio->>Flask: Webhook con mensaje
-    Flask->>MongoDB: Guarda mensaje original
+    Flask->>SQLite: Guarda mensaje original
     Flask->>Gemini: Solicitud clasificación
     
     Note right of Gemini: Extracción de categorías:
@@ -31,15 +31,15 @@ sequenceDiagram
     Note right of Gemini: - Gastos
     
     Gemini->>Flask: Respuesta estructurada en JSON
-    Flask->>MongoDB: Guarda datos clasificados
+    Flask->>SQLite: Guarda datos clasificados
     Flask->>Twilio: Confirmación (opcional)
     Twilio->>WhatsApp: Confirmación (opcional)
     WhatsApp->>Cuidador: Confirmación (opcional)
     
     Usuario->>React: Solicita dashboard
     React->>Flask: API request
-    Flask->>MongoDB: Consulta datos
-    MongoDB->>Flask: Devuelve datos
+    Flask->>SQLite: Consulta datos
+    SQLite->>Flask: Devuelve datos
     Flask->>React: API response
     React->>Usuario: Muestra dashboard
 ```
