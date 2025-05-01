@@ -56,7 +56,7 @@
     },
     {
       "nombre": "Estado Emocional",
-      "detectada": true,
+      "detectada": false,
       "subcategorias": [
         {
           "nombre": "Humor",
@@ -74,7 +74,7 @@
           "nombre": "Agitación",
           "detectada": true,
           "valor": "Estuvo inquieto.",
-          "confianza": 0.85
+          "confianza": 0.8
         }
       ]
     },
@@ -121,5 +121,5 @@
       ]
     }
   ],
-  "resumen": "José presenta problemas de sueño, alimentación reducida y signos de desorientación, con inquietud."
+  "resumen": "José tuvo problemas para dormir y muestra signos de desorientación. Su apetito parece reducido y se mostró inquieto."
 }

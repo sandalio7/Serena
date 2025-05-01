@@ -8,12 +8,15 @@ load_dotenv()
 
 # Obtener la ruta base del proyecto
 basedir = Path(__file__).parent.parent.absolute()
-db_path = basedir / "instance" / "serena.db"
+instance_dir = basedir / "instance"
+# Asegurar que el directorio instance existe
+instance_dir.mkdir(parents=True, exist_ok=True)
+db_path = instance_dir / "serena.db"
 
 class Config:
     """Configuración base para la aplicación Flask"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-insegura-cambiar'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{db_path}'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{db_path.absolute()}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
     
@@ -24,7 +27,8 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     """Configuración para pruebas"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    # Usar la ruta absoluta también para testing
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{db_path.absolute()}'
     
 class ProductionConfig(Config):
     """Configuración para entorno de producción"""

@@ -1,4 +1,3 @@
-# backend/app/api/routes.py
 from flask import Blueprint
 
 # Importar blueprints
@@ -9,10 +8,16 @@ def init_routes(app):
     """Inicializar y registrar todos los blueprints"""
     
     # Registrar blueprints
-    app.register_blueprint(webhook_bp, url_prefix='/api/webhook')
-    app.register_blueprint(patient_bp, url_prefix='/api/patients')
+    # No agregamos url_prefix aquí porque las rutas ya incluyen prefijos
+    app.register_blueprint(webhook_bp)
+    app.register_blueprint(patient_bp)
     
     # Ruta de verificación de estado
     @app.route('/api/health', methods=['GET'])
     def health_check():
         return {'status': 'ok', 'message': 'Serena API está funcionando correctamente'}
+    
+    # Ruta de prueba para verificar que la función init_routes está siendo llamada
+    @app.route('/api/test', methods=['GET'])
+    def test_api():
+        return {'status': 'success', 'message': 'API routes initialized successfully'}

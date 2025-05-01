@@ -20,7 +20,7 @@
           "nombre": "Sueño",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         },
         {
           "nombre": "Síntomas",
@@ -32,25 +32,25 @@
     },
     {
       "nombre": "Salud Cognitiva",
-      "detectada": false,
+      "detectada": true,
       "subcategorias": [
         {
           "nombre": "Memoria",
-          "detectada": false,
-          "valor": null,
-          "confianza": 0.0
+          "detectada": true,
+          "valor": "Sigue olvidando tomar su medicamento para la presión",
+          "confianza": 0.95
         },
         {
           "nombre": "Orientación",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         },
         {
           "nombre": "Comunicación",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         }
       ]
     },
@@ -62,19 +62,19 @@
           "nombre": "Humor",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         },
         {
           "nombre": "Sociabilidad",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         },
         {
           "nombre": "Agitación",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         }
       ]
     },
@@ -85,7 +85,7 @@
         {
           "nombre": "Adherencia",
           "detectada": true,
-          "valor": "Sigue olvidando tomar su medicamento para la presión, tuve que recordárselo tres veces.",
+          "valor": "Sigue olvidando tomar su medicamento para la presión, tuve que recordárselo tres veces",
           "confianza": 0.95
         },
         {
@@ -110,16 +110,16 @@
           "nombre": "Servicios",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         },
         {
           "nombre": "Otros",
           "detectada": false,
           "valor": null,
-          "confianza": 0.0
+          "confianza": 0.1
         }
       ]
     }
   ],
-  "resumen": "María tuvo una ligera mejora en su movilidad y comió bien, pero olvidó tomar su medicamento. Se gastaron 45€ en medicamentos."
+  "resumen": "María tuvo una mejoría en su movilidad y alimentación. Sin embargo, presenta problemas de adherencia medicamentosa y olvidos. Se realizaron gastos en medicamentos."
 }

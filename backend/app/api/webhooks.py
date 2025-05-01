@@ -1,8 +1,10 @@
+#backend/app/api/webhooks.py
 import os
 import logging
 from flask import Blueprint, request, jsonify
 from app.services.classification_service import ClassificationService
 from app.models.caregiver import Caregiver
+from app.models.message import Message
 from app.extensions import db
 
 # Configuración de logging
@@ -11,7 +13,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 # Inicializar Blueprint
-webhook_bp = Blueprint('webhooks', __name__)  # Cambiado de webhooks_bp a webhook_bp
+webhook_bp = Blueprint('webhooks', __name__, url_prefix='/api/webhook')
 
 # Token de verificación para el webhook
 VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
@@ -22,12 +24,12 @@ if not VERIFY_TOKEN:
 # Inicializar servicio de clasificación
 classification_service = ClassificationService()
 
-@webhook_bp.route("/api/webhook/test", methods=["GET"])
+@webhook_bp.route("/test", methods=["GET"])
 def test_webhook():
     """Ruta de prueba para verificar que el blueprint está registrado"""
     return jsonify({"status": "success", "message": "Webhook blueprint is working"}), 200
 
-@webhook_bp.route("/api/webhook/whatsapp", methods=["GET", "POST"])  # Cambiado de webhooks_bp a webhook_bp
+@webhook_bp.route("/whatsapp", methods=["GET", "POST"])
 def whatsapp_webhook():
     """
     Endpoint para recibir y procesar mensajes de WhatsApp.
@@ -52,24 +54,42 @@ def whatsapp_webhook():
         return "Parámetros incorrectos", 400
     
     elif request.method == "POST":
-        # Procesamiento de mensajes entrantes
         try:
-            data = request.json
-            logger.info(f"Mensaje webhook recibido: {data}")
-            
-            # Detectar tipo de proveedor (Twilio, MessageBird, WhatsApp directo)
+            # Detectar tipo de proveedor primero
             provider_type = detect_provider(request)
+            logger.info(f"Proveedor detectado: {provider_type}")
             
-            if provider_type == "whatsapp_cloud":
-                return process_whatsapp_cloud_message(data)
-            elif provider_type == "twilio":
+            # Obtener los datos según el tipo de proveedor
+            if provider_type == "twilio" and request.form:
+                data = request.form.to_dict()
+                logger.info(f"Datos de formulario recibidos: {data}")
                 return process_twilio_message(data)
-            elif provider_type == "messagebird":
-                return process_messagebird_message(data)
-            else:
-                # Si no podemos detectar el proveedor, intentar un procesamiento genérico
-                return process_generic_message(data)
+            elif request.is_json:
+                data = request.get_json(silent=True)
                 
+                if not data:
+                    logger.error("No se encontraron datos JSON o formulario válidos")
+                    return jsonify({"status": "error", "message": "No data provided"}), 400
+                
+                if provider_type == "whatsapp_cloud":
+                    return process_whatsapp_cloud_message(data)
+                elif provider_type == "twilio":
+                    return process_twilio_message(data)
+                elif provider_type == "messagebird":
+                    return process_messagebird_message(data)
+            
+            # Si no se pudo determinar el proveedor o no hay datos válidos
+            logger.warning("Formato de datos no reconocido, intentando procesamiento genérico")
+            
+            # Intentar obtener datos de cualquier fuente
+            data = {}
+            if request.form:
+                data = request.form.to_dict()
+            elif request.is_json:
+                data = request.get_json(silent=True) or {}
+            
+            return process_generic_message(data)
+                    
         except Exception as e:
             logger.error(f"Error procesando webhook: {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
@@ -80,210 +100,129 @@ def detect_provider(request):
     """
     # Comprobar headers específicos de cada proveedor
     user_agent = request.headers.get("User-Agent", "").lower()
-    content_type = request.headers.get("Content-Type", "").lower()
     
     if "twilio" in user_agent:
         return "twilio"
     elif "messagebird" in user_agent:
         return "messagebird"
     
-    # Si no se detecta por headers, intentar por el formato del json
-    data = request.json
-    if not data:
-        return "unknown"
+    # Si no se detecta por headers, intentar por el formato de los datos
+    # Para form-data (application/x-www-form-urlencoded) como envía Twilio
+    if request.form:
+        data = request.form.to_dict()
+        if "SmsMessageSid" in data or "MessageSid" in data:
+            return "twilio"
     
-    # WhatsApp Cloud API format detection
-    if "object" in data and data.get("object") == "whatsapp_business_account":
-        return "whatsapp_cloud"
-    # Twilio format detection
-    elif "SmsMessageSid" in data:
-        return "twilio"
-    # MessageBird format detection
-    elif "message" in data and "originator" in data.get("message", {}):
-        return "messagebird"
+    # Para JSON (application/json)
+    if request.is_json:
+        data = request.get_json(silent=True)
+        if not data:
+            return "unknown"
         
+        # WhatsApp Cloud API format detection
+        if "object" in data and data.get("object") == "whatsapp_business_account":
+            return "whatsapp_cloud"
+        # Twilio format detection en JSON (menos común)
+        elif "SmsMessageSid" in data:
+            return "twilio"
+        # MessageBird format detection
+        elif "message" in data and "originator" in data.get("message", {}):
+            return "messagebird"
+    
     # Default
     return "unknown"
 
-def process_whatsapp_cloud_message(data):
-    """
-    Procesa mensajes del formato de WhatsApp Cloud API
-    """
-    try:
-        # Estructura de WhatsApp Cloud API
-        entry = data.get('entry', [{}])[0]
-        changes = entry.get('changes', [{}])[0]
-        value = changes.get('value', {})
-        messages = value.get('messages', [])
-        
-        if not messages:
-            logger.info("No hay mensajes en la notificación de WhatsApp")
-            return jsonify({"status": "success", "message": "No message to process"}), 200
-        
-        message = messages[0]
-        message_id = message.get('id')
-        
-        # Solo procesar mensajes de texto
-        if message.get('type') != 'text':
-            logger.info(f"Mensaje recibido no es de texto. Tipo: {message.get('type')}")
-            return jsonify({"status": "success", "message": "Non-text message ignored"}), 200
-        
-        # Obtener texto del mensaje
-        text = message.get('text', {}).get('body', '')
-        
-        # Obtener número de teléfono
-        phone_number = message.get('from', '')
-        
-        # Buscar cuidador y paciente asociado
-        patient_id = find_patient_by_caregiver(phone_number)
-        
-        # Procesar el mensaje
-        result = classification_service.process_message(text, phone_number, patient_id)
-        
-        return jsonify({"status": "success", "result": result}), 200
-    
-    except Exception as e:
-        logger.error(f"Error procesando mensaje de WhatsApp Cloud API: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
 def process_twilio_message(data):
-    """Procesa mensajes del formato de Twilio"""
+    """
+    Procesa un mensaje recibido a través de Twilio
+    """
+    logger.info(f"Procesando mensaje de Twilio: {data}")
+    
     try:
-        # Estructura de Twilio
-        message_id = data.get('SmsMessageSid', '')
-        text = data.get('Body', '')
-        phone_number = data.get('From', '').replace('whatsapp:', '')
+        # Extraer información del mensaje
+        sender = data.get('From', '')
+        body = data.get('Body', '')
+        message_sid = data.get('MessageSid', '')
         
-        # Buscar cuidador y paciente asociado
-        patient_id = find_patient_by_caregiver(phone_number)
+        # Eliminar el prefijo 'whatsapp:' si existe
+        if sender and sender.startswith('whatsapp:'):
+            sender = sender[9:]
         
-        # Procesar el mensaje
-        result = classification_service.process_message(text, phone_number, patient_id)
+        logger.info(f"Mensaje de WhatsApp recibido: De: {sender}, Contenido: {body}")
         
-        return jsonify({"status": "success", "result": result}), 200
+        # Buscar al cuidador en la base de datos
+        caregiver = Caregiver.query.filter_by(phone=sender).first()
+        
+        if not caregiver:
+            logger.warning(f"Cuidador no encontrado para el número: {sender}")
+            # Podríamos crear un cuidador temporal o rechazar el mensaje
+            return jsonify({
+                "status": "error", 
+                "message": "Cuidador no registrado"
+            }), 400
+        
+        # Clasificar y procesar el mensaje
+        if body:
+            try:
+                # Crear nuevo mensaje en la BD
+                message = Message(
+                    content=body,
+                    whatsapp_message_id=message_sid,
+                    caregiver_id=caregiver.id,
+                    patient_id=caregiver.patient_id
+                )
+                db.session.add(message)
+                db.session.commit()
+                
+                logger.info(f"Mensaje guardado con ID: {message.id}")
+                
+                # Clasificar el mensaje usando el servicio de IA
+                classification_result = classification_service.gemini_service.classify_message(body)
+                
+                # Guardar los datos clasificados
+                classification_service._save_classification_data(message.id, classification_result, caregiver.patient_id)
+                
+                logger.info(f"Mensaje clasificado y guardado correctamente")
+                return jsonify({"status": "success", "message": "Mensaje procesado y clasificado"}), 200
+                
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error procesando mensaje: {e}")
+                return jsonify({"status": "error", "message": f"Error en procesamiento: {str(e)}"}), 500
+        else:
+            logger.warning("Mensaje recibido sin contenido")
+            return jsonify({"status": "error", "message": "Mensaje sin contenido"}), 400
     
     except Exception as e:
         logger.error(f"Error procesando mensaje de Twilio: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+def process_whatsapp_cloud_message(data):
+    """
+    Procesa un mensaje recibido directamente a través de WhatsApp Cloud API
+    """
+    logger.info(f"Procesando mensaje de WhatsApp Cloud API (no implementado aún)")
+    return jsonify({"status": "not_implemented", "message": "WhatsApp Cloud API processing not implemented yet"}), 200
+
 def process_messagebird_message(data):
-    """Procesa mensajes del formato de MessageBird"""
-    try:
-        # Estructura de MessageBird
-        message = data.get('message', {})
-        message_id = message.get('id', '')
-        text = message.get('payload', {}).get('text', '')
-        phone_number = message.get('originator', '')
-        
-        # Buscar cuidador y paciente asociado
-        patient_id = find_patient_by_caregiver(phone_number)
-        
-        # Procesar el mensaje
-        result = classification_service.process_message(text, phone_number, patient_id)
-        
-        return jsonify({"status": "success", "result": result}), 200
-    
-    except Exception as e:
-        logger.error(f"Error procesando mensaje de MessageBird: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-    
-    
+    """
+    Procesa un mensaje recibido a través de MessageBird
+    """
+    logger.info(f"Procesando mensaje de MessageBird (no implementado aún)")
+    return jsonify({"status": "not_implemented", "message": "MessageBird processing not implemented yet"}), 200
 
 def process_generic_message(data):
     """
-    Intenta procesar un mensaje cuando no se puede determinar el proveedor
+    Intenta procesar un mensaje de formato desconocido
     """
-    try:
-        logger.info("Intentando procesamiento genérico del mensaje")
-        
-        # Buscar texto en ubicaciones probables
-        text = None
-        phone_number = None
-        
-        # Caso 1: JSON simple con campos directos
-        if "text" in data and isinstance(data["text"], str):
-            text = data["text"]
-        elif "message" in data and isinstance(data["message"], str):
-            text = data["message"]
-        elif "body" in data and isinstance(data["body"], str):
-            text = data["body"]
-            
-        # Caso 2: JSON anidado
-        if not text:
-            if "message" in data and isinstance(data["message"], dict):
-                message_obj = data["message"]
-                if "text" in message_obj:
-                    text = message_obj["text"]
-                elif "body" in message_obj:
-                    text = message_obj["body"]
-                elif "content" in message_obj:
-                    text = message_obj["content"]
-                    
-                # Intentar encontrar el número de teléfono
-                if "from" in message_obj:
-                    phone_number = message_obj["from"]
-                elif "sender" in message_obj:
-                    phone_number = message_obj["sender"]
-                elif "phone" in message_obj:
-                    phone_number = message_obj["phone"]
-        
-        # Buscar número de teléfono en ubicaciones probables
-        if not phone_number:
-            if "from" in data:
-                phone_number = data["from"]
-            elif "sender" in data:
-                phone_number = data["sender"]
-            elif "phone" in data:
-                phone_number = data["phone"]
-            elif "number" in data:
-                phone_number = data["number"]
-        
-        # Si no encontramos texto o número, log error y return
-        if not text:
-            logger.error("No se pudo extraer el texto del mensaje")
-            return jsonify({"status": "error", "message": "No se pudo extraer el texto del mensaje"}), 400
-            
-        if not phone_number:
-            logger.warning("No se pudo extraer el número de teléfono, usando 'desconocido'")
-            phone_number = "desconocido"
-            
-        # Buscar paciente (si tenemos número)
-        patient_id = find_patient_by_caregiver(phone_number) if phone_number != "desconocido" else None
-        
-        # Procesar el mensaje
-        result = classification_service.process_message(text, phone_number, patient_id)
-        
-        return jsonify({"status": "success", "result": result}), 200
-        
-    except Exception as e:
-        logger.error(f"Error en procesamiento genérico del mensaje: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+    logger.warning(f"Proveedor no reconocido. Intentando procesamiento genérico.")
+    # Intenta buscar campos comunes en diferentes formatos
+    sender = data.get('From') or data.get('from') or data.get('sender')
+    body = data.get('Body') or data.get('body') or data.get('text') or data.get('content')
     
-    
-
-def find_patient_by_caregiver(phone_number):
-    """
-    Busca el paciente asociado a un cuidador por su número de teléfono
-    
-    Args:
-        phone_number (str): Número de teléfono del cuidador
-        
-    Returns:
-        int: ID del paciente o None si no se encuentra
-    """
-    try:
-        # Limpieza básica del número de teléfono
-        phone_number = phone_number.replace('whatsapp:', '').strip()
-        
-        # Buscar cuidador por número de teléfono
-        caregiver = Caregiver.query.filter_by(phone_number=phone_number).first()
-        
-        if caregiver and caregiver.patient_id:
-            return caregiver.patient_id
-        
-        return None
-    except Exception as e:
-        logger.error(f"Error buscando paciente por cuidador: {e}")
-        return None
-    
-    
+    if sender and body:
+        logger.info(f"Mensaje genérico detectado - De: {sender}, Contenido: {body}")
+        return jsonify({"status": "success", "message": "Generic message processed"}), 200
+    else:
+        logger.error(f"No se pudieron extraer datos básicos del mensaje")
+        return jsonify({"status": "error", "message": "Could not extract message data"}), 400

@@ -70,3 +70,4 @@ def test_gemini_service():
 
 if __name__ == "__main__":
     test_gemini_service()
+    
