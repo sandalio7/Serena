@@ -1,42 +1,331 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+.period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.period-filter button {
+  padding: 8px 12px;
+  border: 1px solid var(--color-gray-300);
+  background-color: var(--color-white);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.period-filter button.period-active {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+}
+
+.amount {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+.expenses-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.expenses-table th, 
+.expenses-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.color-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 4px;
+}
+
+.expense-form button {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.expense-form button:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.pie-chart-container {
+  height: 300px;
+  margin: 20px 0;
+}
+
+.recharts-default-tooltip {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid var(--color-gray-300) !important;
+  border-radius: 4px !important;
+  padding: 10px !important;
+}
+
+.recharts-tooltip-label {
+  font-weight: bold !important;
+  margin-bottom: 4px !important;
+}
+
+/* Estilos para el Dashboard de Salud */
+.physical-vars-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.physical-var {
+  margin-bottom: 8px;
+}
+
+.var-name {
+  font-size: 0.875rem;
+  color: var(--color-gray-700);
+  margin: 0 0 4px 0;
+}
+
+.var-value {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.sleep-card {
+  background-color: #f8f9fa;
+  border-left: 4px solid #6c5ce7;
+}
+
+.sleep-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sleep-icon {
+  font-size: 1.5rem;
+}
+
+.sleep-title {
+  margin: 0;
+  font-weight: 500;
+}
+
+.sleep-status {
+  margin: 0;
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--color-gray-700);
+}
+
+.qualitative-states {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.qualitative-card {
+  border-left: 4px solid #a0aec0;
+}
+
+.rating {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 8px 0;
+}
+
+.description {
+  font-style: italic;
+  margin: 8px 0 0 0;
+}
+
+.conclusion-card {
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.conclusion-good {
+  background-color: #d1fae5;
+  border-left: 4px solid #10b981;
+}
+
+.conclusion-moderate {
+  background-color: #fef3c7;
+  border-left: 4px solid #f59e0b;
+}
+
+.conclusion-bad {
+  background-color: #fee2e2;
+  border-left: 4px solid #ef4444;
+}
+
+.conclusion-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.conclusion-emoji {
+  font-size: 1.5rem;
+}
+
+.conclusion-text {
+  margin: 0;
+  font-weight: 500;
+}
+
+.conclusion-status {
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.status-normal {
+  color: var(--color-success);
+}
+
+.status-moderate {
+  color: var(--color-warning);
+}
+
+.status-low {
+  color: var(--color-danger);
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 16px;
   text-align: center;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Estilos para el Dashboard Económico */
+.tab-economic {
+  background-color: #f0faf5; /* Fondo verde claro */
+  color: #333;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.tab-economic.tab-active {
+  background-color: #1e7853; /* Fondo verde claro cuando está activo */
+  color: #ffffff;
+}
+
+.tab-economic.tab-inactive {
+  background-color: #e2e8f0;
+  color: #64748b;
+}
+
+/* Estilos para el Dashboard de Salud */
+.tab-health {
+  background-color: #e6f0f9; /* Fondo azul claro */
+  color: #666;
+}
+
+.tab-health.tab-active {
+  background-color: #a84632; /* Rojo/marrón cuando está activo */
+  color: white;
+}
+
+.tab-health.tab-inactive {
+  background-color: #e2e8f0;
+  color: #64748b;
+}
+
+.income-card {
+  background-color: #10b981; /* Verde más intenso para ingresos */
+  color: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.expense-card {
+  background-color: #ef4444; /* Rojo para gastos */
+  color: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+/* Estilos para los filtros de período */
+.period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.period-filter button {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.period-filter button.period-active {
+  background-color: #0ea5e9; /* Azul para el botón activo */
+  color: white;
+  border-color: #0ea5e9;
+}
+
+@media (min-width: 640px) {
+  .qualitative-states {
+    grid-template-columns: repeat(3, 1fr);
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
