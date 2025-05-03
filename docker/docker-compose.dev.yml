@@ -10,13 +10,27 @@ services:
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=development
-      - DATABASE_URL=sqlite:///instance/app.db
+      - DATABASE_URL=postgresql://serena_user:serena_password@postgres:5432/serena_db
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - VERIFY_TOKEN=${VERIFY_TOKEN}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     volumes:
       - ../backend:/app
-      - sqlite-data:/app/instance
+    networks:
+      - serena-network
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=serena_user
+      - POSTGRES_PASSWORD=serena_password
+      - POSTGRES_DB=serena_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - serena-network
 
@@ -40,4 +54,4 @@ networks:
     driver: bridge
 
 volumes:
-  sqlite-data:
+  postgres-data:

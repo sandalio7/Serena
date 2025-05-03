@@ -9,7 +9,7 @@ def create_app(config_name='default'):
     app.config.from_object(config[config_name])
     
     # Asegurar que el directorio instance existe
-    instance_dir = Path(app.root_path).parent / "instance"
+    instance_dir = Path("C:/Users/tomas/Documents/SERENA/serena_project/backend/instance")
     instance_dir.mkdir(parents=True, exist_ok=True)
     
     # Inicializar extensiones
@@ -17,10 +17,36 @@ def create_app(config_name='default'):
     migrate.init_app(app, db)
     cors.init_app(app)
     
-    # Verificar conexión a la BD
+    # Crear tablas y datos de prueba
     with app.app_context():
         try:
-            db.engine.connect()
+            # Crear tablas
+            db.create_all()
+            
+            # Importar modelos
+            from .models.patient import Patient
+            from .models.caregiver import Caregiver
+            from .models.message import Message
+            from .models.classified_data import ClassifiedData
+            
+            # Crear datos de prueba si no existen
+            if not Patient.query.first():
+                # Crear paciente
+                patient = Patient(name="María López", age=75, conditions="Alzheimer leve")
+                db.session.add(patient)
+                db.session.flush()  # Para obtener el ID
+                
+                # Crear cuidador
+                caregiver = Caregiver(
+                    name="Ana Pérez",
+                    phone="+5493815122808",  # Usar el número de WhatsApp real
+                    patient_id=patient.id
+                )
+                db.session.add(caregiver)
+                
+                db.session.commit()
+                print("Base de datos creada con datos de prueba")
+            
             print("Conexión a la base de datos establecida correctamente")
         except Exception as e:
             print(f"Error al conectar a la base de datos: {e}")

@@ -16,7 +16,7 @@ db_path = instance_dir / "serena.db"
 class Config:
     """Configuración base para la aplicación Flask"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-insegura-cambiar'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{db_path.absolute()}'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://serena_user:serena_password@localhost:5432/serena_db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
     
@@ -28,7 +28,8 @@ class TestingConfig(Config):
     """Configuración para pruebas"""
     TESTING = True
     # Usar la ruta absoluta también para testing
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{db_path.absolute()}'
+    # Reemplaza la línea actual con esta
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     
 class ProductionConfig(Config):
     """Configuración para entorno de producción"""

@@ -40,6 +40,17 @@ def get_patient(patient_id):
     
     return jsonify(result)
 
+@patient_bp.route('/list', methods=['GET'])
+def get_patients_list():
+    """Obtener lista simplificada de pacientes para selección"""
+    patients = Patient.get_all()
+    result = [{
+        'id': p.id,
+        'name': p.name
+    } for p in patients]
+    
+    return jsonify(result)
+
 @patient_bp.route('/<int:patient_id>/data', methods=['GET'])
 def get_patient_data(patient_id):
     """Obtener datos clasificados de un paciente"""
