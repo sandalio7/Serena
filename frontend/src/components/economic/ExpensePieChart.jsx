@@ -1,68 +1,47 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import React, { useEffect, useState } from 'react';
+import { ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip } from 'recharts';
 
 function ExpensePieChart({ categories }) {
-  // Calculamos el total para los porcentajes
-  const total = categories.reduce((sum, category) => sum + category.amount, 0);
-  
-  // Formateamos los datos para el gráfico
-  const data = categories.map(category => ({
-    name: category.name,
-    value: category.amount,
-    color: category.color,
-    percentage: ((category.amount / total) * 100).toFixed(1)
-  }));
-
-  // Renderizador personalizado para las etiquetas
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, name, percentage }) => {
-    // Solo mostramos etiquetas para categorías con porcentaje significativo
-    if (parseFloat(percentage) < 5) return null;
-    
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
+  // Si no hay categorías o están vacías, mostrar mensaje
+  if (!categories || categories.length === 0) {
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor="middle" 
-        dominantBaseline="central"
-        fontSize={12}
-        fontWeight="bold"
-      >
-        {`${percentage}%`}
-      </text>
+      <div className="expense-pie-chart-container text-center p-4 bg-white rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-2">Distribución de Gastos</h3>
+        <p className="text-gray-500">No hay datos de gastos disponibles</p>
+      </div>
     );
-  };
+  }
 
   return (
-    <div className="pie-chart-container">
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={renderCustomizedLabel}
-            outerRadius={100}
-            innerRadius={60}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip 
-            formatter={(value) => [`$${value.toLocaleString()}`, 'Monto']}
-            labelFormatter={(name) => `${name}`}
-          />
-          {/* Eliminamos el componente Legend que estaba aquí */}
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="expense-pie-chart-container bg-white p-4 rounded-lg shadow">
+      <h3 className="text-lg font-semibold mb-2">Distribución de Gastos</h3>
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={categories}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="amount"
+              nameKey="name"
+              label={({ name, percent }) => 
+                `${name}: ${(percent * 100).toFixed(0)}%`
+              }
+            >
+              {categories.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value) => [`$${value.toLocaleString()}`, 'Gasto']}
+            />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

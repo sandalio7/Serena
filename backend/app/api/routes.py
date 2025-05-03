@@ -4,7 +4,7 @@ from flask import Blueprint
 # Importar blueprints
 from .webhooks import webhook_bp
 from .patient_data import patient_bp
-# from .financial_data import financial_bp  # Comentado: blueprint financiero aún no existe
+from .financial_data import financial_bp  # Comentado: blueprint financiero aún no existe
 from .health_data import health_bp  # Importar blueprint de salud
 
 def init_routes(app):
@@ -13,7 +13,7 @@ def init_routes(app):
     # Registrar blueprints
     app.register_blueprint(webhook_bp)
     app.register_blueprint(patient_bp, url_prefix='/api/patient')
-    # app.register_blueprint(financial_bp)  # Comentado: blueprint financiero aún no existe  
+    app.register_blueprint(financial_bp)  # Comentado: blueprint financiero aún no existe  
     app.register_blueprint(health_bp)  # Registrar blueprint de salud
     
     # Ruta de verificación de estado

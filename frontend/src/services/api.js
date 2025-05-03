@@ -44,17 +44,17 @@ export const patientService = {
 export const financialService = {
   // Obtener resumen financiero
   getSummary: async (patientId, period = 'month') => {
-    return fetchApi(`/api/patient/${patientId}/financial/summary?period=${period}`);
+    return fetchApi(`/api/financial/summary?patient_id=${patientId}&period=${period}`);
   },
   
   // Obtener gastos por categoría
   getExpensesByCategory: async (patientId, period = 'month') => {
-    return fetchApi(`/api/patient/${patientId}/financial/expenses-by-category?period=${period}`);
+    return fetchApi(`/api/financial/expenses/categories?patient_id=${patientId}&period=${period}`);
   },
   
-  // Registrar nuevo movimiento (pendiente de implementar en backend)
+  // Registrar nueva transacción
   registerTransaction: async (transactionData) => {
-    return fetchApi(`/api/patient/${transactionData.patient_id}/financial/transactions`, {
+    return fetchApi('/api/financial/transactions', {
       method: 'POST',
       body: JSON.stringify(transactionData),
     });
