@@ -1,58 +1,77 @@
-// src/components/health/PhysicalVarsCard.jsx
+// frontend/src/components/health/PhysicalVarsCard.jsx
 function PhysicalVarsCard({ data }) {
-    // Función para determinar el emoji según el estado
-    const getStatusEmoji = (status) => {
-      switch (status) {
-        case 'Normal':
-          return '🙂';
-        case 'Moderado':
-          return '😐';
-        case 'Bajo':
-          return '😟';
-        default:
-          return '😐';
-      }
-    };
-  
+  // Si no hay datos disponibles
+  if (!data || 
+      (!data.bloodPressure?.value && 
+       !data.temperature?.value && 
+       !data.oxygenSaturation?.value && 
+       !data.weight?.value)) {
     return (
       <div className="card">
         <h3>Variables físicas numéricas</h3>
-        
-        <div className="physical-vars-grid">
-          <div className="physical-var">
-            <p className="var-name">Presión arterial</p>
-            <p className="var-value">
-              {getStatusEmoji(data.bloodPressure.status)} {data.bloodPressure.value} mmHg
-            </p>
-          </div>
-          
-          <div className="physical-var">
-            <p className="var-name">Temperatura</p>
-            <p className="var-value">
-              {data.temperature.value}°C <span className={`status-${data.temperature.status.toLowerCase()}`}>
-                {data.temperature.status}
-              </span>
-            </p>
-          </div>
-          
-          <div className="physical-var">
-            <p className="var-name">Oxígeno en sangre</p>
-            <p className="var-value">
-              {getStatusEmoji(data.oxygenSaturation.status)} {data.oxygenSaturation.value}% <span className="status-moderate">
-                {data.oxygenSaturation.status}
-              </span>
-            </p>
-          </div>
-          
-          <div className="physical-var">
-            <p className="var-name">Peso</p>
-            <p className="var-value">
-              {getStatusEmoji(data.weight.status)} {data.weight.value} kg / IMC {data.weight.bmi}
-            </p>
-          </div>
-        </div>
+        <p className="no-data-message">No hay datos disponibles para mostrar</p>
       </div>
     );
   }
   
-  export default PhysicalVarsCard;
+  return (
+    <div className="card">
+      <h3>Variables físicas numéricas</h3>
+      
+      <div className="metrics-grid">
+        {data.bloodPressure?.value && (
+          <div className="metric">
+            <h4>Presión arterial</h4>
+            <p className="value">
+              <span className="emoji">😊</span> {data.bloodPressure.value} mmHg
+            </p>
+            {data.bloodPressure.status && (
+              <p className="status">{data.bloodPressure.status}</p>
+            )}
+          </div>
+        )}
+        
+        {data.temperature?.value && (
+          <div className="metric">
+            <h4>Temperatura</h4>
+            <p className="value">
+              {data.temperature.value} °C
+              {data.temperature.status && (
+                <span className="status"> {data.temperature.status}</span>
+              )}
+            </p>
+          </div>
+        )}
+        
+        {data.oxygenSaturation?.value && (
+          <div className="metric">
+            <h4>Oxígeno en sangre</h4>
+            <p className="value">
+              <span className="emoji">😊</span> {data.oxygenSaturation.value}%
+              {data.oxygenSaturation.status && (
+                <span className="status"> {data.oxygenSaturation.status}</span>
+              )}
+            </p>
+          </div>
+        )}
+        
+        {data.weight?.value && (
+          <div className="metric">
+            <h4>Peso</h4>
+            <p className="value">
+              <span className="emoji">😊</span> {data.weight.value} kg
+              {data.weight.bmi && (
+                <span className="bmi"> / IMC {data.weight.bmi}</span>
+              )}
+            </p>
+            {data.weight.status && (
+              <p className="status">{data.weight.status}</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default PhysicalVarsCard;

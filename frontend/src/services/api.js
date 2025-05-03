@@ -1,5 +1,5 @@
 // src/services/api.js
-const API_URL = 'http://localhost:5000'; // Ajusta esta URL según la configuración de tu backend
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Función genérica para hacer peticiones a la API
 async function fetchApi(endpoint, options = {}) {
@@ -21,7 +21,8 @@ async function fetchApi(endpoint, options = {}) {
     const response = await fetch(url, config);
     
     if (!response.ok) {
-      throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      const error = await response.json();
+      throw new Error(error.error || `Error: ${response.status}`);
     }
     
     const data = await response.json();
@@ -35,7 +36,7 @@ async function fetchApi(endpoint, options = {}) {
 // Funciones para obtener pacientes
 export const patientService = {
   getPatients: async () => {
-    return fetchApi('/api/list');
+    return fetchApi('/api/patient/list');
   }
 };
 
@@ -43,33 +44,58 @@ export const patientService = {
 export const financialService = {
   // Obtener resumen financiero
   getSummary: async (patientId, period = 'month') => {
-    return fetchApi(`/api/financial/summary?patient_id=${patientId}&period=${period}`);
+    return fetchApi(`/api/patient/${patientId}/financial/summary?period=${period}`);
   },
   
   // Obtener gastos por categoría
   getExpensesByCategory: async (patientId, period = 'month') => {
-    return fetchApi(`/api/financial/expenses/categories?patient_id=${patientId}&period=${period}`);
+    return fetchApi(`/api/patient/${patientId}/financial/expenses-by-category?period=${period}`);
   },
   
-  // Registrar nuevo movimiento
+  // Registrar nuevo movimiento (pendiente de implementar en backend)
   registerTransaction: async (transactionData) => {
-    return fetchApi('/api/financial/transactions', {
+    return fetchApi(`/api/patient/${transactionData.patient_id}/financial/transactions`, {
       method: 'POST',
       body: JSON.stringify(transactionData),
     });
   }
 };
 
-// Funciones para datos de salud
+// Funciones para datos de salud (pendiente de implementar en backend)
 export const healthService = {
   // Obtener datos de salud
   getHealthData: async (patientId, period = 'month') => {
-    return fetchApi(`/api/health/summary?patient_id=${patientId}&period=${period}`);
+    try {
+      return await fetchApi(`/api/health/summary?patient_id=${patientId}&period=${period}`);
+    } catch (error) {
+      console.error('Error fetching health data:', error);
+      // Si hay un error, devolver un objeto con datos vacíos y un mensaje
+      return {
+        data_available: false,
+        message: 'No se pudieron cargar los datos de salud',
+        physicalVars: {
+          bloodPressure: { value: '', status: '' },
+          temperature: { value: '', status: '' },
+          oxygenSaturation: { value: '', status: '' },
+          weight: { value: '', status: '', bmi: '' }
+        },
+        sleep: { hours: '', status: '' },
+        cognitiveState: { rating: 0, description: '' },
+        physicalState: { rating: 0, description: '' },
+        emotionalState: { rating: 0, description: '' },
+        generalConclusion: ''
+      };
+    }
   },
   
   // Obtener historial de métricas
   getMetricsHistory: async (patientId, metricType, period = 'month') => {
-    return fetchApi(`/api/health/metrics/${metricType}?patient_id=${patientId}&period=${period}`);
+    try {
+      return await fetchApi(`/api/health/metrics/${metricType}?patient_id=${patientId}&period=${period}`);
+    } catch (error) {
+      console.error('Error fetching metrics history:', error);
+      return [];
+    }
   }
 };
 

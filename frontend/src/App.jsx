@@ -7,12 +7,12 @@ import PhysicalVarsCard from './components/health/PhysicalVarsCard'
 import SleepCard from './components/health/SleepCard'
 import QualitativeStateCard from './components/health/QualitativeStateCard'
 import ConclusionCard from './components/health/ConclusionCard'
-import PatientSelector from './components/PatientSelector'
+// import PatientSelector from './components/PatientSelector' // ELIMINADO
 import { financialService, healthService } from './services/api'
 
 function App() {
   const [activeTab, setActiveTab] = useState('economic')
-  const [selectedPatientId, setSelectedPatientId] = useState(1)  // Default a paciente con ID 1
+  const [selectedPatientId] = useState(1)  // Fijo en 1, no editable
   const [activePeriod, setActivePeriod] = useState('month')
   const [activeHealthPeriod, setActiveHealthPeriod] = useState('month')
   
@@ -56,43 +56,27 @@ function App() {
     health: null
   })
   
-  // Estado para el formulario
-  const [formData, setFormData] = useState({
-    type: 'expense',
-    category: '',
-    amount: '',
-    date: new Date().toISOString().split('T')[0]
-  })
-
-  // Cargar datos financieros cuando cambia el período o el paciente
+  // Estado para el formulario (ya no lo necesitamos por ahora)
+  // const [formData, setFormData] = useState({...}) // ELIMINADO
+  
+  // Cargar datos financieros cuando cambia el período
   useEffect(() => {
-    if (!selectedPatientId) return;
-    
     async function loadFinancialData() {
       setLoading(prev => ({ ...prev, financial: true }))
       setError(prev => ({ ...prev, financial: null }))
       
       try {
-        // En un entorno real, descomentar estas líneas
-        // const summary = await financialService.getSummary(selectedPatientId, activePeriod);
-        // const categories = await financialService.getExpensesByCategory(selectedPatientId, activePeriod);
+        // Obtener datos reales del backend
+        const summary = await financialService.getSummary(selectedPatientId, activePeriod);
+        const categories = await financialService.getExpensesByCategory(selectedPatientId, activePeriod);
         
-        // Para pruebas, usamos datos de ejemplo
-        const mockData = {
-          income: 145200,
-          expenses: 172850,
-          categories: [
-            { name: 'Vivienda', amount: 45000, color: '#1e40af' },
-            { name: 'Servicios básicos', amount: 22500, color: '#3b82f6' },
-            { name: 'Cuidados', amount: 40000, color: '#ef4444' },
-            { name: 'Salud', amount: 35000, color: '#f97316' },
-            { name: 'Supermercado', amount: 21000, color: '#22c55e' },
-            { name: 'Transporte', amount: 5350, color: '#a855f7' },
-            { name: 'Varios', amount: 4000, color: '#6b7280' },
-          ]
-        }
+        setFinancialData({
+          income: summary.income,
+          expenses: summary.expenses,
+          categories: categories
+        })
         
-        setFinancialData(mockData)
+        console.log('Datos financieros cargados:', { summary, categories })
       } catch (err) {
         console.error('Error loading financial data:', err)
         setError(prev => ({ ...prev, financial: 'Error al cargar datos financieros' }))
@@ -104,84 +88,40 @@ function App() {
     loadFinancialData()
   }, [selectedPatientId, activePeriod])
   
-  // Cargar datos de salud cuando cambia el período o el paciente
+  // Cargar datos de salud cuando cambia el período
   useEffect(() => {
-    if (!selectedPatientId) return;
-    
     async function loadHealthData() {
-      setLoading(prev => ({ ...prev, health: true }))
-      setError(prev => ({ ...prev, health: null }))
+      setLoading(prev => ({ ...prev, health: true }));
+      setError(prev => ({ ...prev, health: null }));
       
       try {
+        // Llamar al servicio API con el ID del paciente y el período
+        const data = await healthService.getHealthData(selectedPatientId, activeHealthPeriod);
+        console.log('Datos de salud recibidos:', data);
         
-         const data = await healthService.getHealthData(selectedPatientId, activeHealthPeriod);
-        
-        // Para pruebas, usamos datos de ejemplo
-        
-        
-        setHealthData(mockData)
+        // Verificar si hay datos disponibles
+        if (data && !data.error) {
+          setHealthData(data);
+        } else {
+          // Si el backend devuelve un error, mostrar mensaje
+          setError(prev => ({ 
+            ...prev, 
+            health: data.error || 'No se pudieron cargar los datos de salud' 
+          }));
+        }
       } catch (err) {
-        console.error('Error loading health data:', err)
-        setError(prev => ({ ...prev, health: 'Error al cargar datos de salud' }))
+        console.error('Error loading health data:', err);
+        setError(prev => ({ 
+          ...prev, 
+          health: 'Error al cargar datos de salud. Por favor intente nuevamente.' 
+        }));
       } finally {
-        setLoading(prev => ({ ...prev, health: false }))
+        setLoading(prev => ({ ...prev, health: false }));
       }
     }
     
-    loadHealthData()
-  }, [selectedPatientId, activeHealthPeriod])
-  
-  // Manejar cambios en el formulario
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-  
-  // Manejar envío del formulario
-  // En la función handleSubmit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      // Validar datos del formulario
-      if (!formData.category || !formData.amount) {
-        alert('Por favor complete todos los campos');
-        return;
-      }
-      
-      // Preparar datos para enviar
-      const transactionData = {
-        patient_id: selectedPatientId,
-        type: formData.type,
-        category: formData.category,
-        amount: parseFloat(formData.amount.replace(/[\$,]/g, '')),
-        date: formData.date
-      };
-      
-      // Enviar datos a la API
-      await financialService.registerTransaction(transactionData);
-      
-      // Mostrar confirmación
-      alert('Transacción registrada correctamente');
-      
-      // Limpiar formulario
-      setFormData({
-        type: 'expense',
-        category: '',
-        amount: '',
-        date: new Date().toISOString().split('T')[0]
-      });
-      
-      // Recargar datos
-      loadFinancialData();
-    } catch (err) {
-      console.error('Error registering transaction:', err);
-      alert('Error al registrar la transacción');
-    }
-  };
+    loadHealthData();
+  }, [selectedPatientId, activeHealthPeriod]);
 
   return (
     <div className="container">
@@ -201,10 +141,10 @@ function App() {
           </button>
         </div>
         
-        <PatientSelector 
-          onSelectPatient={setSelectedPatientId}
-          selectedPatientId={selectedPatientId}
-        />
+        {/* PatientSelector ELIMINADO */}
+        <div className="patient-info">
+          <h2>Dashboard - Paciente ID: {selectedPatientId}</h2>
+        </div>
       </header>
 
       <main>
@@ -274,67 +214,7 @@ function App() {
                   </table>
                 </div>
                 
-                <div className="card">
-                  <h3>Registrar nuevo movimiento</h3>
-                  <form className="expense-form" onSubmit={handleSubmit}>
-                    <div className="form-group">
-                      <label htmlFor="type">Tipo</label>
-                      <select 
-                        id="type" 
-                        name="type" 
-                        value={formData.type}
-                        onChange={handleFormChange}
-                      >
-                        <option value="income">Ingreso</option>
-                        <option value="expense">Gasto</option>
-                      </select>
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="category">Subcategoría</label>
-                      <select 
-                        id="category" 
-                        name="category"
-                        value={formData.category}
-                        onChange={handleFormChange}
-                      >
-                        <option value="">Seleccionar...</option>
-                        {financialData.categories.map((category) => (
-                          <option key={category.name} value={category.name}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="amount">Monto</label>
-                      <input 
-                        type="text" 
-                        id="amount" 
-                        name="amount" 
-                        placeholder="$7.800"
-                        value={formData.amount}
-                        onChange={handleFormChange}
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="date">Fecha</label>
-                      <input 
-                        type="date" 
-                        id="date" 
-                        name="date"
-                        value={formData.date}
-                        onChange={handleFormChange}
-                      />
-                    </div>
-                    
-                    <button type="submit" className="btn-primary">
-                      Registrar
-                    </button>
-                  </form>
-                </div>
+                {/* Formulario de registro ELIMINADO por ahora */}
               </>
             )}
           </div>
