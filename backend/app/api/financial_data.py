@@ -250,3 +250,73 @@ def get_category_color(category):
     
     # Devolver color para la categoría o uno por defecto
     return color_map.get(category, '#6b7280')  # Gris por defecto
+
+@financial_bp.route('/messages-history', methods=['GET'])
+def get_messages_history():
+    """Obtener historial de mensajes con gastos"""
+    # Obtener parámetros
+    patient_id = request.args.get('patient_id', type=int)
+    period = request.args.get('period', 'month')
+    
+    # Validar paciente
+    if not patient_id:
+        return jsonify({'error': 'Se requiere ID de paciente'}), 400
+    
+    # Calcular fecha de inicio según el período
+    today = datetime.now()
+    if period == 'day':
+        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == 'week':
+        start_date = today - timedelta(days=7)
+    elif period == 'fortnight':
+        start_date = today - timedelta(days=15)
+    else:  # month
+        start_date = today - timedelta(days=30)
+    
+    # Obtener mensajes con datos clasificados
+    history_data = db.session.query(ClassifiedData, Message).join(
+        Message, ClassifiedData.message_id == Message.id
+    ).filter(
+        ClassifiedData.patient_id == patient_id,
+        ClassifiedData.created_at >= start_date,
+        ClassifiedData.expenses.isnot(None)  # Solo mensajes con gastos
+    ).order_by(
+        ClassifiedData.created_at.desc()
+    ).all()
+    
+    # Preparar datos para el frontend
+    result = []
+    
+    for data, message in history_data:
+        # Solo procesar si hay gastos
+        if not data.expenses:
+            continue
+            
+        expenses_list = json.loads(data.expenses)
+        
+        # Procesar cada gasto encontrado en el mensaje
+        for expense in expenses_list:
+            category_name = expense.get('nombre', 'Otros')
+            amount_str = expense.get('valor', '0')
+            
+            # Extraer valor numérico
+            import re
+            amount_match = re.search(r'(\d+(?:\.\d+)?)', amount_str)
+            if amount_match:
+                amount = float(amount_match.group(1))
+            else:
+                continue
+            
+            # Añadir a resultados
+            result.append({
+                'category': {
+                    'name': category_name,
+                    'color': get_category_color(category_name)
+                },
+                'amount': amount,
+                'date': data.created_at.isoformat(),
+                'message': message.content,
+                'message_id': message.id
+            })
+    
+    return jsonify(result)

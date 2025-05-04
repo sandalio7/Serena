@@ -2,6 +2,8 @@
 from flask import Blueprint, jsonify, request
 from ..models.classified_data import ClassifiedData
 from ..models.patient import Patient
+from ..models.message import Message
+from sqlalchemy import cast, Date
 import json
 from datetime import datetime, timedelta
 
@@ -290,6 +292,253 @@ def get_metrics_history(metric_type):
                     break  # Solo una métrica por fecha
     
     return jsonify(metrics)
+
+@health_bp.route('/history', methods=['GET'])
+def get_health_history():
+    """
+    Obtiene el historial de variables de salud con filtros opcionales
+    
+    Query params:
+    - patient_id: ID del paciente (obligatorio)
+    - period: 'day', 'week', 'month' (opcional, default: 'day')
+    - category: 'physical', 'cognitive', 'emotional', 'medication' (opcional)
+    """
+    # Obtener parámetros de query
+    patient_id = request.args.get('patient_id', type=int)
+    period = request.args.get('period', 'day')
+    category = request.args.get('category', None)
+    
+    # Validar paciente
+    if not patient_id:
+        return jsonify({'error': 'Se requiere ID de paciente'}), 400
+    
+    patient = Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({'error': 'Paciente no encontrado'}), 404
+    
+    # Calcular fecha de inicio según período
+    today = datetime.now().date()
+    if period == 'day':
+        start_date = today
+    elif period == 'week':
+        start_date = today - timedelta(days=7)
+    elif period == 'month':
+        start_date = today - timedelta(days=30)
+    else:
+        return jsonify({"error": "Período no válido. Use 'day', 'week' o 'month'"}), 400
+    
+    # Construir query base - usamos created_at en lugar de timestamp
+    query = ClassifiedData.query.filter(
+        ClassifiedData.patient_id == patient_id,
+        cast(ClassifiedData.created_at, Date) >= start_date
+    ).order_by(
+        ClassifiedData.created_at.desc()
+    )
+    
+    # Aplicar filtro de categoría si se especifica
+    if category:
+        if category == 'physical':
+            query = query.filter(ClassifiedData.physical_health.isnot(None))
+        elif category == 'cognitive':
+            query = query.filter(ClassifiedData.cognitive_health.isnot(None))
+        elif category == 'emotional':
+            query = query.filter(ClassifiedData.emotional_state.isnot(None))
+        elif category == 'medication':
+            query = query.filter(ClassifiedData.medication.isnot(None))
+    
+    # Ejecutar consulta
+    results = query.all()
+    
+    # Formatear resultados
+    history_items = []
+    for item in results:
+        # Buscar el mensaje original
+        message = Message.query.get(item.message_id)
+        
+        # Crear item básico con información común
+        history_item = {
+            "id": item.id,
+            "date": item.created_at.strftime("%d/%m/%Y"),
+            "time": item.created_at.strftime("%H:%M"),
+            "original_text": message.content[:100] + "..." if len(message.content) > 100 else message.content,
+        }
+        
+        # Añadir información específica según las categorías disponibles
+        if item.physical_health:
+            try:
+                physical_data = json.loads(item.physical_health)
+                # Verificar si physical_data es una lista o un diccionario
+                if isinstance(physical_data, list):
+                    for subcat in physical_data:
+                        if isinstance(subcat, dict):
+                            history_items.append({
+                                **history_item,
+                                "category": "Salud Física",
+                                "subcategory": subcat.get('nombre', ''),
+                                "value": subcat.get('valor', ''),
+                                "rating": int(subcat.get('confianza', 0.7) * 10),
+                                "confidence": subcat.get('confianza', 0.7)
+                            })
+                        elif isinstance(subcat, str):
+                            # Si es un string, usar como valor directamente
+                            history_items.append({
+                                **history_item,
+                                "category": "Salud Física",
+                                "subcategory": "General",
+                                "value": subcat,
+                                "rating": 7,  # Valor por defecto
+                                "confidence": 0.7
+                            })
+                elif isinstance(physical_data, dict):
+                    history_items.append({
+                        **history_item,
+                        "category": "Salud Física",
+                        "subcategory": physical_data.get('nombre', 'General'),
+                        "value": physical_data.get('valor', ''),
+                        "rating": int(physical_data.get('confianza', 0.7) * 10),
+                        "confidence": physical_data.get('confianza', 0.7)
+                    })
+            except (json.JSONDecodeError, AttributeError) as e:
+                # Si hay error al decodificar, usar el texto crudo
+                history_items.append({
+                    **history_item,
+                    "category": "Salud Física",
+                    "subcategory": "General",
+                    "value": str(item.physical_health),
+                    "rating": 7,  # Valor por defecto
+                    "confidence": 0.7
+                })
+        
+        if item.cognitive_health:
+            try:
+                cognitive_data = json.loads(item.cognitive_health)
+                # Mismo patrón que arriba
+                if isinstance(cognitive_data, list):
+                    for subcat in cognitive_data:
+                        if isinstance(subcat, dict):
+                            history_items.append({
+                                **history_item,
+                                "category": "Estado Cognitivo",
+                                "subcategory": subcat.get('nombre', ''),
+                                "value": subcat.get('valor', ''),
+                                "rating": int(subcat.get('confianza', 0.7) * 10),
+                                "confidence": subcat.get('confianza', 0.7)
+                            })
+                        elif isinstance(subcat, str):
+                            history_items.append({
+                                **history_item,
+                                "category": "Estado Cognitivo",
+                                "subcategory": "General",
+                                "value": subcat,
+                                "rating": 7,
+                                "confidence": 0.7
+                            })
+                elif isinstance(cognitive_data, dict):
+                    history_items.append({
+                        **history_item,
+                        "category": "Estado Cognitivo",
+                        "subcategory": cognitive_data.get('nombre', 'General'),
+                        "value": cognitive_data.get('valor', ''),
+                        "rating": int(cognitive_data.get('confianza', 0.7) * 10),
+                        "confidence": cognitive_data.get('confianza', 0.7)
+                    })
+            except (json.JSONDecodeError, AttributeError) as e:
+                history_items.append({
+                    **history_item,
+                    "category": "Estado Cognitivo",
+                    "subcategory": "General",
+                    "value": str(item.cognitive_health),
+                    "rating": 7,
+                    "confidence": 0.7
+                })
+        
+        if item.emotional_state:
+            try:
+                emotional_data = json.loads(item.emotional_state)
+                # Mismo patrón
+                if isinstance(emotional_data, list):
+                    for subcat in emotional_data:
+                        if isinstance(subcat, dict):
+                            history_items.append({
+                                **history_item,
+                                "category": "Estado Emocional",
+                                "subcategory": subcat.get('nombre', ''),
+                                "value": subcat.get('valor', ''),
+                                "rating": int(subcat.get('confianza', 0.7) * 10),
+                                "confidence": subcat.get('confianza', 0.7)
+                            })
+                        elif isinstance(subcat, str):
+                            history_items.append({
+                                **history_item,
+                                "category": "Estado Emocional",
+                                "subcategory": "General",
+                                "value": subcat,
+                                "rating": 7,
+                                "confidence": 0.7
+                            })
+                elif isinstance(emotional_data, dict):
+                    history_items.append({
+                        **history_item,
+                        "category": "Estado Emocional",
+                        "subcategory": emotional_data.get('nombre', 'General'),
+                        "value": emotional_data.get('valor', ''),
+                        "rating": int(emotional_data.get('confianza', 0.7) * 10),
+                        "confidence": emotional_data.get('confianza', 0.7)
+                    })
+            except (json.JSONDecodeError, AttributeError) as e:
+                history_items.append({
+                    **history_item,
+                    "category": "Estado Emocional",
+                    "subcategory": "General",
+                    "value": str(item.emotional_state),
+                    "rating": 7,
+                    "confidence": 0.7
+                })
+        
+        if item.medication:
+            try:
+                medication_data = json.loads(item.medication)
+                # Mismo patrón
+                if isinstance(medication_data, list):
+                    for subcat in medication_data:
+                        if isinstance(subcat, dict):
+                            history_items.append({
+                                **history_item,
+                                "category": "Medicación",
+                                "subcategory": subcat.get('nombre', ''),
+                                "value": subcat.get('valor', ''),
+                                "rating": int(subcat.get('confianza', 0.7) * 10),
+                                "confidence": subcat.get('confianza', 0.7)
+                            })
+                        elif isinstance(subcat, str):
+                            history_items.append({
+                                **history_item,
+                                "category": "Medicación",
+                                "subcategory": "General",
+                                "value": subcat,
+                                "rating": 7,
+                                "confidence": 0.7
+                            })
+                elif isinstance(medication_data, dict):
+                    history_items.append({
+                        **history_item,
+                        "category": "Medicación",
+                        "subcategory": medication_data.get('nombre', 'General'),
+                        "value": medication_data.get('valor', ''),
+                        "rating": int(medication_data.get('confianza', 0.7) * 10),
+                        "confidence": medication_data.get('confianza', 0.7)
+                    })
+            except (json.JSONDecodeError, AttributeError) as e:
+                history_items.append({
+                    **history_item,
+                    "category": "Medicación",
+                    "subcategory": "General",
+                    "value": str(item.medication),
+                    "rating": 7,
+                    "confidence": 0.7
+                })
+    
+    return jsonify({"history": history_items})
 
 def get_status_from_confidence(confidence):
     """Convertir valor de confianza a estado"""

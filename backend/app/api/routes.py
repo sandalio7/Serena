@@ -13,8 +13,8 @@ def init_routes(app):
     # Registrar blueprints
     app.register_blueprint(webhook_bp)
     app.register_blueprint(patient_bp, url_prefix='/api/patient')
-    app.register_blueprint(financial_bp)  # Comentado: blueprint financiero aún no existe  
-    app.register_blueprint(health_bp)  # Registrar blueprint de salud
+    app.register_blueprint(financial_bp)  
+    app.register_blueprint(health_bp)  
     
     # Ruta de verificación de estado
     @app.route('/api/health-check', methods=['GET'])

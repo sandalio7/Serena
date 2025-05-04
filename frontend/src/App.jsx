@@ -3,11 +3,12 @@ import './App.css'
 import './index.css'
 import FinancialSummaryCard from './components/economic/FinancialSummaryCard'
 import ExpensePieChart from './components/economic/ExpensePieChart'
+import ExpenseHistoryList from './components/economic/ExpenseHistoryList'
 import PhysicalVarsCard from './components/health/PhysicalVarsCard'
 import SleepCard from './components/health/SleepCard'
-import QualitativeStateCard from './components/health/QualitativeStateCard'
+import HealthHistoryList from './components/health/HealthHistoryList' // Nuevo componente importado
 import ConclusionCard from './components/health/ConclusionCard'
-// import PatientSelector from './components/PatientSelector' // ELIMINADO
+
 import { financialService, healthService } from './services/api'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
   const [selectedPatientId] = useState(1)  // Fijo en 1, no editable
   const [activePeriod, setActivePeriod] = useState('month')
   const [activeHealthPeriod, setActiveHealthPeriod] = useState('month')
+  const [activeHealthCategory, setActiveHealthCategory] = useState('') // Nuevo estado para filtrar por categoría
   
   // Estados para almacenar datos de la API
   const [financialData, setFinancialData] = useState({
@@ -22,6 +24,9 @@ function App() {
     expenses: 0,
     categories: []
   })
+  
+  // Nuevo estado para el historial de gastos
+  const [expenseHistory, setExpenseHistory] = useState([])
   
   const [healthData, setHealthData] = useState({
     physicalVars: {
@@ -56,9 +61,6 @@ function App() {
     health: null
   })
   
-  // Estado para el formulario (ya no lo necesitamos por ahora)
-  // const [formData, setFormData] = useState({...}) // ELIMINADO
-  
   // Cargar datos financieros cuando cambia el período
   useEffect(() => {
     async function loadFinancialData() {
@@ -69,6 +71,7 @@ function App() {
         // Obtener datos reales del backend
         const summary = await financialService.getSummary(selectedPatientId, activePeriod);
         const categories = await financialService.getExpensesByCategory(selectedPatientId, activePeriod);
+        const history = await financialService.getExpenseHistory(selectedPatientId, activePeriod);
         
         setFinancialData({
           income: summary.income,
@@ -76,7 +79,9 @@ function App() {
           categories: categories
         })
         
-        console.log('Datos financieros cargados:', { summary, categories })
+        setExpenseHistory(history);
+        
+        console.log('Datos financieros cargados:', { summary, categories, history })
       } catch (err) {
         console.error('Error loading financial data:', err)
         setError(prev => ({ ...prev, financial: 'Error al cargar datos financieros' }))
@@ -141,7 +146,6 @@ function App() {
           </button>
         </div>
         
-        {/* PatientSelector ELIMINADO */}
         <div className="patient-info">
           <h2>Dashboard - Paciente ID: {selectedPatientId}</h2>
         </div>
@@ -186,35 +190,10 @@ function App() {
                   </button>
                 </div>
                 
-                <div className="card">
-                  <h3>Gastos por categoría</h3>
-                  <ExpensePieChart categories={financialData.categories} />
-                  
-                  <table className="expenses-table">
-                    <thead>
-                      <tr>
-                        <th>Categoría</th>
-                        <th>Monto gastado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {financialData.categories.map((category) => (
-                        <tr key={category.name}>
-                          <td>
-                            <span 
-                              className="color-indicator" 
-                              style={{ backgroundColor: category.color }}
-                            ></span>
-                            {category.name}
-                          </td>
-                          <td>${category.amount.toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ExpensePieChart categories={financialData.categories} />
                 
-                {/* Formulario de registro ELIMINADO por ahora */}
+                {/* Nuevo componente para historial de gastos */}
+                <ExpenseHistoryList expenseHistory={expenseHistory} />
               </>
             )}
           </div>
@@ -229,46 +208,45 @@ function App() {
                 <PhysicalVarsCard data={healthData.physicalVars} />
                 <SleepCard data={healthData.sleep} />
                 
-                <div className="period-filter">
-                  <button 
-                    className={activeHealthPeriod === 'day' ? 'period-active' : ''}
-                    onClick={() => setActiveHealthPeriod('day')}
-                  >
-                    Día
-                  </button>
-                  <button 
-                    className={activeHealthPeriod === 'week' ? 'period-active' : ''}
-                    onClick={() => setActiveHealthPeriod('week')}
-                  >
-                    Semana
-                  </button>
-                  <button 
-                    className={activeHealthPeriod === 'month' ? 'period-active' : ''}
-                    onClick={() => setActiveHealthPeriod('month')}
-                  >
-                    Mes
-                  </button>
+                <div className="filter-container">
+                  <div className="period-filter">
+                    <button 
+                      className={activeHealthPeriod === 'day' ? 'period-active' : ''}
+                      onClick={() => setActiveHealthPeriod('day')}
+                    >
+                      Día
+                    </button>
+                    <button 
+                      className={activeHealthPeriod === 'week' ? 'period-active' : ''}
+                      onClick={() => setActiveHealthPeriod('week')}
+                    >
+                      Semana
+                    </button>
+                    <button 
+                      className={activeHealthPeriod === 'month' ? 'period-active' : ''}
+                      onClick={() => setActiveHealthPeriod('month')}
+                    >
+                      Mes
+                    </button>
+                  </div>
+                  
+                  <div className="category-filter">
+                    <select 
+                      value={activeHealthCategory}
+                      onChange={(e) => setActiveHealthCategory(e.target.value)}
+                      className="category-select"
+                    >
+                      <option value="">Todas las categorías</option>
+                      <option value="physical">Salud Física</option>
+                      <option value="cognitive">Estado Cognitivo</option>
+                      <option value="emotional">Estado Emocional</option>
+                      <option value="medication">Medicación</option>
+                    </select>
+                  </div>
                 </div>
                 
-                <div className="qualitative-states">
-                  <QualitativeStateCard 
-                    title="Estado Cognitivo"
-                    rating={healthData.cognitiveState.rating}
-                    description={healthData.cognitiveState.description}
-                  />
-                  
-                  <QualitativeStateCard 
-                    title="Estado Físico"
-                    rating={healthData.physicalState.rating}
-                    description={healthData.physicalState.description}
-                  />
-                  
-                  <QualitativeStateCard 
-                    title="Estado Emocional"
-                    rating={healthData.emotionalState.rating}
-                    description={healthData.emotionalState.description}
-                  />
-                </div>
+                {/* Reemplazamos las tarjetas de estados por el historial */}
+                <HealthHistoryList patientId={selectedPatientId} period={activeHealthPeriod} />
                 
                 <ConclusionCard status={healthData.generalConclusion} />
               </>

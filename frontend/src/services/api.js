@@ -58,6 +58,11 @@ export const financialService = {
       method: 'POST',
       body: JSON.stringify(transactionData),
     });
+  },
+  
+  // Obtener historial de mensajes con gastos (nueva función)
+  getExpenseHistory: async (patientId, period = 'month') => {
+    return fetchApi(`/api/financial/messages-history?patient_id=${patientId}&period=${period}`);
   }
 };
 
@@ -96,7 +101,38 @@ export const healthService = {
       console.error('Error fetching metrics history:', error);
       return [];
     }
+  },
+  
+  // Nueva función para obtener el historial de salud
+  getHealthHistory: async (patientId, period = 'day', category = '') => {
+    try {
+      let url = `/api/health/history?patient_id=${patientId}&period=${period}`;
+      if (category) {
+        url += `&category=${category}`;
+      }
+      
+      const response = await fetchApi(url);
+      return response.history || [];
+    } catch (error) {
+      console.error('Error fetching health history:', error);
+      return [];
+    }
   }
+};
+
+export const api = {
+  get: (endpoint, options) => fetchApi(endpoint, { method: 'GET', ...options }),
+  post: (endpoint, data, options) => fetchApi(endpoint, { 
+    method: 'POST', 
+    body: JSON.stringify(data), 
+    ...options 
+  }),
+  put: (endpoint, data, options) => fetchApi(endpoint, { 
+    method: 'PUT', 
+    body: JSON.stringify(data), 
+    ...options 
+  }),
+  delete: (endpoint, options) => fetchApi(endpoint, { method: 'DELETE', ...options }),
 };
 
 export default {
