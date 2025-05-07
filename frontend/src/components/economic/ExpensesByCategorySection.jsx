@@ -10,6 +10,11 @@ import './ExpensesByCategorySection.css';
  * @param {string} props.error - Mensaje de error, si existe
  */
 function ExpensesByCategorySection({ categories, loading, error }) {
+  // Datos por defecto para mostrar cuando no hay categorías
+  const defaultCategories = [
+    { category: 'Sin datos', amount: 1, color: '#d1d5db' }
+  ];
+
   return (
     <div className="expenses-by-category-section card">
       <h2>Gastos por categoría</h2>
@@ -20,25 +25,33 @@ function ExpensesByCategorySection({ categories, loading, error }) {
       
       {error && (
         <div className="error-message">
-          Error: {error}
+          <i className="error-icon">⚠️</i>
+          <span>Error: {error}</span>
+        </div>
+      )}
+      
+      <div className="chart-container">
+        {/* Siempre mostramos el gráfico, con datos reales o por defecto */}
+        <ExpensePieChart 
+          data={(!loading && !error && categories && categories.length > 0) 
+            ? categories 
+            : defaultCategories}
+          isEmpty={!categories || categories.length === 0}
+        />
+      </div>
+      
+      {!loading && !error && (!categories || categories.length === 0) && (
+        <div className="no-data-message">
+          <i className="warning-icon">📊</i>
+          <p>No hay datos de gastos disponibles para este período</p>
+          <p className="suggestion-message">
+            Intenta seleccionar otro período o registra nuevos gastos
+          </p>
         </div>
       )}
       
       {!loading && !error && categories && categories.length > 0 && (
-        <>
-          <div className="chart-container">
-            <ExpensePieChart data={categories} />
-          </div>
-          
-          <CategoryList categories={categories} />
-        </>
-      )}
-      
-      {!loading && !error && (!categories || categories.length === 0) && (
-        <div className="no-data-message">
-          <p>No hay datos disponibles</p>
-          <p className="no-categories-message">No hay categorías disponibles</p>
-        </div>
+        <CategoryList categories={categories} />
       )}
     </div>
   );

@@ -10,13 +10,68 @@
   
   .chart-container {
     margin-bottom: 15px;
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   
   .loading-indicator {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 200px;
+    height: 60px;
     color: #666;
     font-style: italic;
+    animation: pulse 1.5s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+  
+  .error-message {
+    background-color: #fee2e2;
+    border-left: 4px solid #ef4444;
+    padding: 12px 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    color: #b91c1c;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+  }
+  
+  .error-icon {
+    font-size: 1.2rem;
+    margin-right: 10px;
+  }
+  
+  .no-data-message {
+    text-align: center;
+    padding: 20px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    border: 1px dashed #d1d5db;
+    margin: 15px 0;
+    color: #4b5563;
+  }
+  
+  .warning-icon {
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+  
+  .no-data-message p {
+    margin: 5px 0;
+  }
+  
+  .suggestion-message {
+    font-size: 0.9rem;
+    color: #ef4444;
+    font-weight: 500;
+    margin-top: 8px !important;
   }
