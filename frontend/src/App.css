@@ -1,454 +1,65 @@
-.period-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0;
-}
-
-.period-filter button {
-  padding: 8px 12px;
-  border: 1px solid var(--color-gray-300);
-  background-color: var(--color-white);
-  border-radius: 4px;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.period-filter button.period-active {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  border-color: var(--color-primary);
-}
-
-.card h3 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 1.25rem;
-}
-
-.amount {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 8px 0;
-}
-
-.expenses-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-}
-
-.expenses-table th, 
-.expenses-table td {
-  padding: 8px;
-  text-align: left;
-  border-bottom: 1px solid var(--color-gray-200);
-}
-
-.color-indicator {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--color-gray-300);
-  border-radius: 4px;
-}
-
-.expense-form button {
-  width: 100%;
-  padding: 12px;
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.expense-form button:hover {
-  background-color: var(--color-primary-dark);
-}
-
-.pie-chart-container {
-  height: 300px;
-  margin: 20px 0;
-}
-
-.recharts-default-tooltip {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid var(--color-gray-300) !important;
-  border-radius: 4px !important;
-  padding: 10px !important;
-}
-
-.recharts-tooltip-label {
-  font-weight: bold !important;
-  margin-bottom: 4px !important;
-}
-
-/* Estilos para el Dashboard de Salud */
-.physical-vars-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.physical-var {
-  margin-bottom: 8px;
-}
-
-.var-name {
-  font-size: 0.875rem;
-  color: var(--color-gray-700);
-  margin: 0 0 4px 0;
-}
-
-.var-value {
-  font-size: 1rem;
-  font-weight: 500;
+/* Estilos globales para la aplicación */
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
 }
 
-.sleep-card {
-  background-color: #f8f9fa;
-  border-left: 4px solid #6c5ce7;
+body {
+  font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  color: #333;
+  background-color: #f5f5f5;
 }
 
-.sleep-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sleep-icon {
-  font-size: 1.5rem;
-}
-
-.sleep-title {
-  margin: 0;
-  font-weight: 500;
-}
-
-.sleep-status {
-  margin: 0;
-  margin-left: auto;
-  font-weight: 500;
-  color: var(--color-gray-700);
-}
-
-.qualitative-states {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.qualitative-card {
-  border-left: 4px solid #a0aec0;
-}
-
-.rating {
-  font-size: 1.125rem;
-  font-weight: 500;
-  margin: 8px 0;
-}
-
-.description {
-  font-style: italic;
-  margin: 8px 0 0 0;
-}
-
-.conclusion-card {
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.conclusion-good {
-  background-color: #d1fae5;
-  border-left: 4px solid #10b981;
-}
-
-.conclusion-moderate {
-  background-color: #fef3c7;
-  border-left: 4px solid #f59e0b;
-}
-
-.conclusion-bad {
-  background-color: #fee2e2;
-  border-left: 4px solid #ef4444;
-}
-
-.conclusion-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.conclusion-emoji {
-  font-size: 1.5rem;
-}
-
-.conclusion-text {
-  margin: 0;
-  font-weight: 500;
-}
-
-.conclusion-status {
-  margin-left: 8px;
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 16px 0;
   font-weight: 600;
 }
 
-.status-normal {
-  color: var(--color-success);
+/* Estilo temporal para el placeholder */
+.placeholder-content {
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.status-moderate {
-  color: var(--color-warning);
-}
-
-.status-low {
-  color: var(--color-danger);
-}
-
-.tabs {
-  display: flex;
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-
-.tab {
-  flex: 1;
-  padding: 12px 16px;
-  text-align: center;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: background-color 0.3s;
-}
-
-/* Estilos para el Dashboard Económico */
-.tab-economic {
-  background-color: #f0faf5; /* Fondo verde claro */
+.placeholder-content h1 {
   color: #333;
-}
-
-.tab-economic.tab-active {
-  background-color: #1e7853; /* Fondo verde claro cuando está activo */
-  color: #ffffff;
-}
-
-.tab-economic.tab-inactive {
-  background-color: #e2e8f0;
-  color: #64748b;
-}
-
-/* Estilos para el Dashboard de Salud */
-.tab-health {
-  background-color: #e6f0f9; /* Fondo azul claro */
-  color: #666;
-}
-
-.tab-health.tab-active {
-  background-color: #a84632; /* Rojo/marrón cuando está activo */
-  color: white;
-}
-
-.tab-health.tab-inactive {
-  background-color: #e2e8f0;
-  color: #64748b;
-}
-
-.income-card {
-  background-color: #10b981; /* Verde más intenso para ingresos */
-  color: white;
-  border-radius: 8px;
-  padding: 16px;
+  font-size: 1.5rem;
   margin-bottom: 16px;
 }
 
-.expense-card {
-  background-color: #ef4444; /* Rojo para gastos */
-  color: white;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.amount {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin: 8px 0;
-}
-
-/* Estilos para los filtros de período */
-.period-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0;
-}
-
-.period-filter button {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
+/* Estilos generales para los componentes que vamos a crear */
+.card {
   background-color: white;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.period-filter button.period-active {
-  background-color: #0ea5e9; /* Azul para el botón activo */
-  color: white;
-  border-color: #0ea5e9;
-}
-
-/* Estilos para estados de carga y error */
-.loading-message {
-  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  font-style: italic;
-  color: var(--color-gray-700);
+  margin-bottom: 20px;
 }
 
-.error-message {
-  text-align: center;
-  padding: 20px;
-  color: var(--color-danger);
-  background-color: #fee2e2;
-  border-radius: 8px;
-  border-left: 4px solid var(--color-danger);
-  margin-bottom: 16px;
-}
-
-/* Estilos para el selector de pacientes */
-.patient-selector {
-  display: flex;
-  align-items: center;
-  margin: 16px 0;
-  padding: 0 16px;
-}
-
-.selector-label {
-  margin-right: 8px;
+.btn {
+  background-color: #f8c43a;
+  color: #333;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
   font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
-.patient-select {
-  padding: 8px;
-  border: 1px solid var(--color-gray-300);
-  border-radius: 4px;
-  background-color: white;
-  font-size: 1rem;
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.loading-message {
-  text-align: center;
-  padding: 20px;
-  font-style: italic;
-  color: var(--color-gray-700);
-}
-
-.error-message {
-  text-align: center;
-  padding: 20px;
-  color: var(--color-danger);
-  background-color: #fee2e2;
-  border-radius: 8px;
-  border-left: 4px solid var(--color-danger);
-  margin-bottom: 16px;
-}
-
-.loading-text, .error-text {
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-/* Estilos para el historial de gastos */
-.expense-history-list {
-  margin-top: 20px;
-}
-
-.history-container {
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.history-item {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 10px;
-}
-
-.history-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 5px;
-}
-
-.category-info {
-  display: flex;
-  align-items: center;
-}
-
-.color-indicator {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.category-name {
-  font-weight: bold;
-}
-
-.amount {
-  font-weight: bold;
-}
-
-.date-info {
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 8px;
-}
-
-.message-content {
-  font-size: 14px;
-  line-height: 1.4;
-  color: #4b5563;
-}
-
-.empty-message {
-  color: #6b7280;
-  padding: 10px 0;
-}
-
-@media (min-width: 640px) {
-  .qualitative-states {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }

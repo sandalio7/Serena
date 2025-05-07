@@ -1,0 +1,22 @@
+.expenses-by-category-section {
+    padding: 15px;
+  }
+  
+  .expenses-by-category-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #333;
+  }
+  
+  .chart-container {
+    margin-bottom: 15px;
+  }
+  
+  .loading-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #666;
+    font-style: italic;
+  }

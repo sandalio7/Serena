@@ -1,0 +1,28 @@
+.expense-card {
+  padding: 15px;
+}
+
+.expense-card h2 {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.expense-amount {
+  display: flex;
+  align-items: center;
+}
+
+.amount {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.loading-indicator {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-style: italic;
+}

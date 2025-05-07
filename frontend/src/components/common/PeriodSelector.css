@@ -1,0 +1,31 @@
+.period-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+    background-color: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .period-btn {
+    background-color: transparent;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #666;
+  }
+  
+  .period-btn:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .period-btn.active {
+    background-color: #4aba9e; /* Color verde como en la imagen */
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
