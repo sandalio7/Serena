@@ -3,11 +3,14 @@ import PeriodSelector from '../components/common/PeriodSelector';
 import ExpenseCard from '../components/economic/ExpenseCard';
 import ExpensesByCategorySection from '../components/economic/ExpensesByCategorySection';
 import TransactionHistory from '../components/economic/TransactionHistory';
+import FormularioRegistro from '../components/economic/FormularioRegistro';
 import { 
   getFinancialSummary, 
   getExpensesByCategory, 
   getTransactionsHistory,
-  registerTransaction 
+  registerTransaction,
+  updateTransaction,
+  deleteTransaction
 } from '../services/financialService';
 import './EconomicDashboard.css';
 
@@ -165,33 +168,17 @@ function EconomicDashboard() {
     loadTransactionsData();
   }, [selectedPeriod, patientId]); // Se ejecuta cada vez que cambia el período
   
-  // Manejar el envío del formulario de registro
-  const handleRegisterTransaction = async () => {
+  // Manejar el registro de una nueva transacción
+  const handleRegisterTransaction = async (formData) => {
     try {
-      // Obtener valores del formulario
-      const categorySelect = document.getElementById('category');
-      const amountInput = document.getElementById('amount');
-      
-      if (!categorySelect || !amountInput) {
-        console.error('No se encontraron los elementos del formulario');
-        return;
-      }
-      
-      const category = categorySelect.value;
-      const amount = amountInput.value;
-      
-      if (!category || !amount) {
-        alert('Por favor, complete todos los campos');
-        return;
-      }
-      
       // Preparar datos para el backend
       const transactionData = {
         patient_id: patientId,
         type: 'expense', // Por ahora solo manejamos gastos
-        category: category,
-        amount: parseFloat(amount),
-        date: new Date().toISOString().split('T')[0] // Formato YYYY-MM-DD
+        category: formData.category,
+        amount: formData.amount,
+        date: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+        description: `Registro manual: ${formData.description || 'Sin descripción'}`
       };
       
       console.log('Registrando transacción:', transactionData);
@@ -204,10 +191,6 @@ function EconomicDashboard() {
         return;
       }
       
-      // Limpiar formulario
-      categorySelect.value = '';
-      amountInput.value = '';
-      
       // Recargar los datos
       setExpensesData(prev => ({ ...prev, loading: true }));
       setTransactionsData(prev => ({ ...prev, loading: true }));
@@ -215,10 +198,61 @@ function EconomicDashboard() {
       
       // Mostrar mensaje de éxito
       alert('Transacción registrada exitosamente');
-      
     } catch (error) {
       console.error('Error al registrar la transacción:', error);
       alert('Error al registrar la transacción. Inténtelo nuevamente.');
+    }
+  };
+  
+  // Manejar la actualización de una transacción
+  const handleTransactionUpdate = async (updatedTransaction) => {
+    try {
+      console.log('Actualizando transacción:', updatedTransaction);
+      
+      // Llamar al servicio para actualizar la transacción
+      const result = await updateTransaction(updatedTransaction);
+      
+      if (result.error) {
+        alert(`Error al actualizar la transacción: ${result.message}`);
+        return;
+      }
+      
+      // Recargar los datos
+      setExpensesData(prev => ({ ...prev, loading: true }));
+      setTransactionsData(prev => ({ ...prev, loading: true }));
+      setExpenseTotalData(prev => ({ ...prev, loading: true }));
+      
+      // Mostrar mensaje de éxito
+      alert('Transacción actualizada exitosamente');
+    } catch (error) {
+      console.error('Error al actualizar la transacción:', error);
+      alert('Error al actualizar la transacción. Inténtelo nuevamente.');
+    }
+  };
+  
+  // Manejar la eliminación de una transacción
+  const handleTransactionDelete = async (transactionId) => {
+    try {
+      console.log('Eliminando transacción:', transactionId);
+      
+      // Llamar al servicio para eliminar la transacción
+      const result = await deleteTransaction(transactionId);
+      
+      if (result.error) {
+        alert(`Error al eliminar la transacción: ${result.message}`);
+        return;
+      }
+      
+      // Recargar los datos
+      setExpensesData(prev => ({ ...prev, loading: true }));
+      setTransactionsData(prev => ({ ...prev, loading: true }));
+      setExpenseTotalData(prev => ({ ...prev, loading: true }));
+      
+      // Mostrar mensaje de éxito
+      alert('Transacción eliminada exitosamente');
+    } catch (error) {
+      console.error('Error al eliminar la transacción:', error);
+      alert('Error al eliminar la transacción. Inténtelo nuevamente.');
     }
   };
   
@@ -247,47 +281,16 @@ function EconomicDashboard() {
           error={expensesData.error}
         />
         
-        {/* Formulario de registro */}
-        <div className="register-form">
-          <div className="form-controls">
-            <div className="form-group">
-              <select className="form-control" id="category">
-                <option value="">Seleccione categoría</option>
-                <option value="Vivienda">Vivienda</option>
-                <option value="Servicios básicos">Servicios básicos</option>
-                <option value="Cuidados">Cuidados</option>
-                <option value="Salud">Salud</option>
-                <option value="Supermercado">Supermercado</option>
-                <option value="Transporte">Transporte</option>
-                <option value="Medicamentos">Medicamentos</option>
-                <option value="Recreación">Recreación</option>
-                <option value="Otros">Otros</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <input 
-                type="number" 
-                className="form-control" 
-                id="amount"
-                placeholder="Monto" 
-                min="0" 
-                step="0.01"
-              />
-            </div>
-          </div>
-          <button 
-            className="register-btn"
-            onClick={handleRegisterTransaction}
-          >
-            Registrar
-          </button>
-        </div>
+        {/* Formulario de registro con campo de descripción */}
+        <FormularioRegistro onRegister={handleRegisterTransaction} />
         
         {/* Historial de transacciones (se actualiza con el período) */}
         <TransactionHistory 
           transactions={transactionsData.items} 
           loading={transactionsData.loading}
           error={transactionsData.error}
+          onTransactionUpdate={handleTransactionUpdate}
+          onTransactionDelete={handleTransactionDelete}
         />
       </div>
     </div>

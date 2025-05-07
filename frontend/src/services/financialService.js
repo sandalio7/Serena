@@ -6,41 +6,6 @@
 const API_BASE_URL = '/api/financial';
 
 /**
- * Verifica si la respuesta es JSON válido o muestra un error detallado
- * @param {Response} response - Respuesta fetch
- * @returns {Promise<any>} - Datos JSON o error
- */
-const handleResponse = async (response) => {
-  // Primero verificamos si la respuesta es exitosa
-  if (!response.ok) {
-    // Intentamos obtener detalles del error
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      // Si el error está en formato JSON, lo extraemos
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
-    } else {
-      // Si no es JSON, mostramos el texto del error
-      const errorText = await response.text();
-      console.error('Respuesta no JSON:', errorText.substring(0, 150) + '...');
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-  }
-
-  // Si la respuesta es exitosa, verificamos que sea JSON
-  const contentType = response.headers.get('content-type');
-  if (!contentType || !contentType.includes('application/json')) {
-    // Si no es JSON, es un problema en el servidor
-    const text = await response.text();
-    console.error('Respuesta no JSON:', text.substring(0, 150) + '...');
-    throw new Error('La respuesta del servidor no es JSON válido');
-  }
-
-  // Parece ser JSON válido, lo devolvemos
-  return await response.json();
-};
-
-/**
  * Obtiene el resumen financiero para un paciente y período
  * @param {number} patientId - ID del paciente
  * @param {string} period - Período ('day', 'week', 'month')
@@ -52,10 +17,14 @@ export const getFinancialSummary = async (patientId, period = 'month') => {
     console.log(`Solicitando resumen financiero: ${url}`);
     
     const response = await fetch(url);
-    return await handleResponse(response);
+    
+    if (!response.ok) {
+      throw new Error(`Error en la solicitud: ${response.status}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error obteniendo resumen financiero:', error);
-    // Devolvemos un objeto de error para manejarlo en el componente
     return { 
       error: true, 
       message: error.message || 'Error obteniendo datos financieros'
@@ -75,7 +44,12 @@ export const getExpensesByCategory = async (patientId, period = 'month') => {
     console.log(`Solicitando gastos por categoría: ${url}`);
     
     const response = await fetch(url);
-    return await handleResponse(response);
+    
+    if (!response.ok) {
+      throw new Error(`Error en la solicitud: ${response.status}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error obteniendo gastos por categoría:', error);
     return { 
@@ -97,16 +71,23 @@ export const getTransactionsHistory = async (patientId, period = 'month') => {
     console.log(`Solicitando historial de transacciones: ${url}`);
     
     const response = await fetch(url);
-    const data = await handleResponse(response);
+    
+    if (!response.ok) {
+      throw new Error(`Error en la solicitud: ${response.status}`);
+    }
+    
+    const data = await response.json();
     
     // Formatear datos para adaptarlos a nuestro componente
     return data.map(item => ({
-      id: item.message_id,
+      id: item.id,                   // ID de ClassifiedData (importante para editar/eliminar)
+      message_id: item.message_id,   // Mantenemos message_id también
       category: item.category.name,
       description: item.message,
       amount: item.amount,
       date: formatDate(new Date(item.date)),
-      color: item.category.color
+      color: item.category.color,
+      edited: item.edited || false
     }));
   } catch (error) {
     console.error('Error obteniendo historial de transacciones:', error);
@@ -134,12 +115,88 @@ export const registerTransaction = async (transactionData) => {
       body: JSON.stringify(transactionData)
     });
     
-    return await handleResponse(response);
+    if (!response.ok) {
+      throw new Error(`Error en la solicitud: ${response.status}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error registrando transacción:', error);
     return { 
       error: true, 
       message: error.message || 'Error registrando transacción'
+    };
+  }
+};
+
+/**
+ * Actualiza una transacción existente
+ * @param {Object} transactionData - Datos actualizados de la transacción
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const updateTransaction = async (transactionData) => {
+  try {
+    // Asegurarse de que tenemos el ID correcto
+    const transactionId = transactionData.id;
+    if (!transactionId) {
+      throw new Error('ID de transacción no proporcionado');
+    }
+    
+    console.log(`Actualizando transacción ID ${transactionId}:`, transactionData);
+    
+    const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        description: transactionData.description,
+        amount: transactionData.amount,
+        edited: true
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error en la solicitud: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error actualizando transacción:', error);
+    return { 
+      error: true, 
+      message: error.message || 'Error actualizando transacción'
+    };
+  }
+};
+
+/**
+ * Elimina una transacción
+ * @param {string|number} transactionId - ID de la transacción a eliminar
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const deleteTransaction = async (transactionId) => {
+  try {
+    if (!transactionId) {
+      throw new Error('ID de transacción no proporcionado');
+    }
+    
+    console.log(`Eliminando transacción con ID: ${transactionId}`);
+    
+    const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error en la solicitud: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error eliminando transacción:', error);
+    return { 
+      error: true, 
+      message: error.message || 'Error eliminando transacción'
     };
   }
 };
@@ -161,5 +218,7 @@ export default {
   getFinancialSummary,
   getExpensesByCategory,
   getTransactionsHistory,
-  registerTransaction
+  registerTransaction,
+  updateTransaction,
+  deleteTransaction
 };

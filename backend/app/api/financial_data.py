@@ -309,6 +309,7 @@ def get_messages_history():
             
             # Añadir a resultados
             result.append({
+                'id': data.id,  # ID de ClassifiedData para editar/eliminar
                 'category': {
                     'name': category_name,
                     'color': get_category_color(category_name)
@@ -316,7 +317,102 @@ def get_messages_history():
                 'amount': amount,
                 'date': data.created_at.isoformat(),
                 'message': message.content,
-                'message_id': message.id
+                'message_id': message.id,
+                'edited': getattr(data, 'edited', False)  # Añadir campo edited
             })
     
     return jsonify(result)
+
+# Añadir al final del archivo financial_data.py
+
+@financial_bp.route('/transactions/<int:transaction_id>', methods=['PUT'])
+def update_transaction(transaction_id):
+    """Actualizar una transacción existente"""
+    # Obtener datos de la solicitud
+    data = request.json
+    
+    if not data:
+        return jsonify({'error': 'No se recibieron datos'}), 400
+    
+    # Buscar la transacción (el mensaje y los datos clasificados)
+    classified_data = ClassifiedData.query.get(transaction_id)
+    
+    if not classified_data:
+        return jsonify({'error': 'Transacción no encontrada'}), 404
+    
+    # Obtener el mensaje asociado
+    message = Message.query.get(classified_data.message_id)
+    
+    if not message:
+        return jsonify({'error': 'Mensaje asociado no encontrado'}), 404
+    
+    # Actualizar campos
+    try:
+        # Actualizar descripción si se proporcionó
+        if 'description' in data:
+            message.content = data['description']
+        
+        # Actualizar monto si se proporcionó
+        if 'amount' in data:
+            # Obtener datos actuales
+            expenses_data = json.loads(classified_data.expenses)
+            
+            if expenses_data:
+                # Actualizar el primer elemento (asumiendo que solo hay uno por mensaje)
+                expenses_data[0]['valor'] = str(data['amount'])
+                classified_data.expenses = json.dumps(expenses_data)
+                
+                # Actualizar el resumen
+                classified_data.summary = f"Registro {data.get('edited', False) and 'editado' or 'manual'}: {message.content}"
+        
+        # Marcar como editado
+        classified_data.edited = True
+        
+        # Guardar cambios
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Transacción actualizada correctamente',
+            'transaction': {
+                'id': classified_data.id,
+                'message_id': message.id,
+                'description': message.content,
+                'edited': classified_data.edited
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al actualizar la transacción: {str(e)}'}), 500
+
+
+@financial_bp.route('/transactions/<int:transaction_id>', methods=['DELETE'])
+def delete_transaction(transaction_id):
+    """Eliminar una transacción"""
+    try:
+        # Buscar la transacción (datos clasificados)
+        classified_data = ClassifiedData.query.get(transaction_id)
+        
+        if not classified_data:
+            return jsonify({'error': 'Transacción no encontrada'}), 404
+        
+        # Obtener el mensaje asociado
+        message = Message.query.get(classified_data.message_id)
+        
+        # Eliminar primero los datos clasificados
+        db.session.delete(classified_data)
+        
+        # Si se encontró el mensaje, eliminarlo también
+        if message:
+            db.session.delete(message)
+        
+        # Confirmar cambios
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Transacción eliminada correctamente'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al eliminar la transacción: {str(e)}'}), 500

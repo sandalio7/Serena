@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import TransactionItem from './TransactionItem';
 import './TransactionHistory.css';
 
 /**
@@ -6,10 +8,32 @@ import './TransactionHistory.css';
  * @param {Array} props.transactions - Array de objetos con datos de transacciones
  * @param {boolean} props.loading - Indica si los datos están cargando
  * @param {string} props.error - Mensaje de error, si existe
+ * @param {Function} props.onTransactionUpdate - Función para actualizar una transacción
+ * @param {Function} props.onTransactionDelete - Función para eliminar una transacción
  */
-function TransactionHistory({ transactions, loading, error }) {
+function TransactionHistory({ 
+  transactions, 
+  loading, 
+  error, 
+  onTransactionUpdate,
+  onTransactionDelete 
+}) {
   // Verificamos que transactions sea un array y tenga elementos
   const hasTransactions = Array.isArray(transactions) && transactions.length > 0;
+
+  // Manejar la edición de una transacción
+  const handleEdit = (updatedTransaction) => {
+    if (onTransactionUpdate) {
+      onTransactionUpdate(updatedTransaction);
+    }
+  };
+
+  // Manejar la eliminación de una transacción
+  const handleDelete = (transactionId) => {
+    if (onTransactionDelete) {
+      onTransactionDelete(transactionId);
+    }
+  };
 
   if (loading) {
     return (
@@ -54,26 +78,14 @@ function TransactionHistory({ transactions, loading, error }) {
     <div className="transactions-history">
       <h3 className="section-title">Historial de Transacciones</h3>
       
+      {/* Iteramos a través de las transacciones para mostrarlas */}
       {transactions.map(transaction => (
-        <div key={transaction.id} className="transaction-item">
-          <div className="transaction-header">
-            <div className="transaction-category">
-              <div 
-                className="category-dot" 
-                style={{ backgroundColor: transaction.color || '#6b7280' }}
-              ></div>
-              <span>{transaction.category}</span>
-            </div>
-            <div className="transaction-date">{transaction.date}</div>
-          </div>
-          
-          <div className="transaction-description">"{transaction.description}"</div>
-          
-          <div className="transaction-details">
-            <span className="transaction-amount">${transaction.amount.toLocaleString()}</span>
-            <button className="edit-btn">editar</button>
-          </div>
-        </div>
+        <TransactionItem
+          key={transaction.id}
+          transaction={transaction}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       ))}
     </div>
   );
