@@ -51,12 +51,12 @@ function EconomicDashboard() {
     setTransactionsData(prev => ({ ...prev, loading: true, error: null }));
   };
   
-  // Cargar datos de gastos totales (independiente del período)
+  // Cargar datos de gastos totales mensuales (siempre usa 'month', independiente del período seleccionado)
   useEffect(() => {
     const loadExpenseTotalData = async () => {
       try {
-        console.log('Cargando datos de gastos totales...');
-        // Obtener datos del resumen financiero
+        console.log('Cargando datos de gastos mensuales totales...');
+        // Obtener datos del resumen financiero con período 'month' siempre
         const summaryData = await getFinancialSummary(patientId, 'month');
         
         if (summaryData.error) {
@@ -260,7 +260,7 @@ function EconomicDashboard() {
     <div className="economic-dashboard">
       <h1>Dashboard Económico</h1>
       
-      {/* Gastos totales (no se actualiza con el período) */}
+      {/* Gastos totales mensuales (no se actualiza con el período) */}
       <ExpenseCard 
         amount={expenseTotalData.totalExpense} 
         loading={expenseTotalData.loading}

@@ -10,7 +10,7 @@ import './ExpenseCard.css';
 function ExpenseCard({ amount, loading, error }) {
   return (
     <div className="expense-card card">
-      <h2>Gastos Totales</h2>
+      <h2>Total Gastos Mensuales</h2>
       
       {loading && (
         <div className="loading-indicator">Cargando...</div>
