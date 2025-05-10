@@ -21,23 +21,16 @@
 .vital-signs-content {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .vital-signs-column {
   flex: 1;
-  padding: 0 10px;
-}
-
-.vital-signs-column:first-child {
-  border-right: 1px solid #E7E6BE;
-}
-
-.normal-values {
-  color: #3D5036;
+  padding: 0 8px;
 }
 
 .vital-signs-column h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #3D5036;
   margin-bottom: 16px;
@@ -48,23 +41,23 @@
 }
 
 .vital-sign-label {
-  font-size: 16px;
+  font-size: 14px;
   color: #3D5036;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .vital-sign-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
-  display: flex;
-  align-items: center;
   color: #3D5036;
+  word-wrap: break-word;
 }
 
 .status-indicator {
-  margin-left: 8px;
+  margin-left: 4px;
   font-weight: normal;
-  font-size: 16px;
+  font-size: 14px;
+  display: inline-block;
 }
 
 .status-indicator.normal {
@@ -79,15 +72,57 @@
   color: #E86A40;
 }
 
-@media (max-width: 480px) {
-  .vital-signs-content {
-    flex-direction: column;
+/* Ajustes para pantallas pequeñas manteniendo las dos columnas */
+@media (max-width: 600px) {
+  .vital-signs-card {
+    padding: 12px;
   }
   
-  .vital-signs-column:first-child {
-    border-right: none;
-    border-bottom: 1px solid #E7E6BE;
-    padding-bottom: 16px;
-    margin-bottom: 16px;
+  .vital-signs-header {
+    font-size: 16px;
+    padding: 6px;
+  }
+  
+  .vital-signs-content {
+    gap: 6px;
+  }
+  
+  .vital-signs-column {
+    padding: 0 4px;
+  }
+  
+  .vital-signs-column h3 {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  
+  .vital-sign-label {
+    font-size: 12px;
+  }
+  
+  .vital-sign-value {
+    font-size: 14px;
+  }
+  
+  .status-indicator {
+    font-size: 12px;
+    margin-left: 2px;
+    display: block; /* Mueve el indicador a una nueva línea en móviles para ahorrar espacio */
+    margin-top: 2px;
+  }
+}
+
+/* Ajustes adicionales para pantallas muy pequeñas */
+@media (max-width: 400px) {
+  .vital-sign-label {
+    font-size: 11px;
+  }
+  
+  .vital-sign-value {
+    font-size: 13px;
+  }
+  
+  .status-indicator {
+    font-size: 11px;
   }
 }

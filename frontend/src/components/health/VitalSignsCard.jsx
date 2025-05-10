@@ -15,7 +15,6 @@ const VitalSignsCard = ({ vitalSigns, normalValues }) => {
     
     switch(type) {
       case 'bloodPressure':
-        // Lógica simplificada, en un caso real sería más compleja
         if (value.systolic > 140 || value.diastolic > 90) {
           status = 'bad';
           text = 'Mal';
@@ -25,7 +24,7 @@ const VitalSignsCard = ({ vitalSigns, normalValues }) => {
         }
         break;
       case 'temperature':
-        if (value > 37.5) {
+        if (value > 37.5 && value <= 38) {
           status = 'moderate';
           text = 'Moderado';
         } else if (value > 38) {
@@ -34,10 +33,10 @@ const VitalSignsCard = ({ vitalSigns, normalValues }) => {
         }
         break;
       case 'oxygenation':
-        if (value < 95) {
+        if (value >= 95 && value < 98) {
           status = 'moderate';
           text = 'Moderado';
-        } else if (value < 90) {
+        } else if (value < 95) {
           status = 'bad';
           text = 'Mal';
         }
@@ -56,10 +55,6 @@ const VitalSignsCard = ({ vitalSigns, normalValues }) => {
 
   return (
     <div className="vital-signs-card">
-      <div className="vital-signs-header">
-        <span>Ultimo día</span>
-      </div>
-      
       <div className="vital-signs-content">
         <div className="vital-signs-column">
           <h3>Estado Físico</h3>
@@ -95,26 +90,26 @@ const VitalSignsCard = ({ vitalSigns, normalValues }) => {
           </div>
         </div>
         
-        <div className="vital-signs-column normal-values">
+        <div className="vital-signs-column">
           <h3>Valores normales</h3>
           
           <div className="vital-sign-item">
             <div className="vital-sign-label">Presión arterial</div>
-            <div className="vital-sign-value normal">
+            <div className="vital-sign-value">
               {`${normalValues.bloodPressure.systolic}/${normalValues.bloodPressure.diastolic}`}
             </div>
           </div>
           
           <div className="vital-sign-item">
             <div className="vital-sign-label">Temperatura</div>
-            <div className="vital-sign-value normal">
+            <div className="vital-sign-value">
               {`${normalValues.temperature}°C`}
             </div>
           </div>
           
           <div className="vital-sign-item">
             <div className="vital-sign-label">Oxigenación</div>
-            <div className="vital-sign-value normal">
+            <div className="vital-sign-value">
               {`${normalValues.oxygenation}%`}
             </div>
           </div>

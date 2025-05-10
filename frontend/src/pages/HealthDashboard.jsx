@@ -73,23 +73,24 @@ function HealthDashboard() {
   return (
     <MainLayout>
       <div className="health-dashboard">
-        <h1>Estado de Salud</h1>
-        
         <HealthStatusCard 
           status={healthData.currentStatus.status}
           score={healthData.currentStatus.score}
           emoji={healthData.currentStatus.emoji}
         />
         
+        <h2 className="section-title">Ultimo día</h2>
         <VitalSignsCard 
           vitalSigns={healthData.vitalSigns}
           normalValues={healthData.normalValues}
         />
         
+        <h2 className="section-title">Resumen Semanal</h2>
         <WeeklySummaryCard 
           summaryData={healthData.weeklySummary}
         />
         
+        <h2 className="section-title">Historial</h2>
         <HealthHistorySection 
           events={healthData.historyEvents}
           onEditEvent={handleEditEvent}

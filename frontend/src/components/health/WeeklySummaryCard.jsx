@@ -15,11 +15,7 @@ const WeeklySummaryCard = ({ summaryData }) => {
   };
 
   return (
-    <div className="weekly-summary-card">
-      <div className="weekly-summary-header">
-        <span>Resumen Semanal</span>
-      </div>
-      
+    <div className="weekly-summary-container">
       <div className="weekly-summary-grid">
         {/* Estado Físico */}
         <div className="summary-category">

@@ -4,25 +4,21 @@
   min-height: 100vh;
 }
 
-.health-dashboard h1 {
+.section-title {
   color: #3D5036;
-  margin-bottom: 20px;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-/* Fondo general del dashboard */
-.health-dashboard {
-  background-color: #FBF5D7;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 24px 0 12px 0;
+  background: transparent;
+  text-align: center; /* Centrar el título */
 }
 
 /* Estilo general para todas las tarjetas del dashboard */
 .health-dashboard .health-status-card,
 .health-dashboard .vital-signs-card,
-.health-dashboard .weekly-summary-card,
-.health-dashboard .health-history-section {
+.health-dashboard .weekly-summary-card {
   background-color: #FFFDEB;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
