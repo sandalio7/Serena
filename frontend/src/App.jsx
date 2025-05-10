@@ -1,18 +1,19 @@
-import { useState } from 'react';
-import './App.css';
-import MainLayout from './components/layout/MainLayout';
+import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css'
 import EconomicDashboard from './pages/EconomicDashboard';
+import HealthDashboard from './pages/HealthDashboard';
 
 function App() {
-  // Este estado temporal será reemplazado cuando implementemos la navegación real
-  const [currentPage, setCurrentPage] = useState('economic');
-
   return (
-    <MainLayout>
-      {/* Por ahora solo mostramos el dashboard económico */}
-      {currentPage === 'economic' && <EconomicDashboard />}
-    </MainLayout>
-  );
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/economic" replace />} />
+        <Route path="/economic" element={<EconomicDashboard />} />
+        <Route path="/health" element={<HealthDashboard />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
-export default App;
+export default App

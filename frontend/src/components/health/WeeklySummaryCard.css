@@ -1,0 +1,92 @@
+.weekly-summary-card {
+  background-color: #FFFDEB;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.weekly-summary-header {
+  color: #3D5036;
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-align: center;
+  background-color: #FBF5D7;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.weekly-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.summary-category {
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.category-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3D5036;
+  margin: 0;
+}
+
+.status-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.status-circle.good {
+  background-color: #5B896A;
+}
+
+.status-circle.moderate {
+  background-color: #F8DC76;
+  color: #3D5036;
+}
+
+.status-circle.bad {
+  background-color: #E86A40;
+}
+
+.status-icon {
+  font-size: 14px;
+}
+
+.category-score {
+  font-size: 14px;
+  font-weight: 500;
+  color: #3D5036;
+  margin-bottom: 8px;
+}
+
+.category-description {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+@media (max-width: 600px) {
+  .weekly-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,38 @@
+.history-tabs {
+  margin-bottom: 16px;
+}
+
+.history-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #3D5036;
+  margin-bottom: 12px;
+}
+
+.period-tabs, .category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.period-tab, .category-tab {
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #E7E6BE;
+  color: #3D5036;
+}
+
+.period-tab:hover, .category-tab:hover {
+  background-color: #F8DC76;
+}
+
+.period-tab.active, .category-tab.active {
+  background-color: #285258;
+  color: white;
+}

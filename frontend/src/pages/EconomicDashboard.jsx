@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PeriodSelector from '../components/common/PeriodSelector';
+import MainLayout from '../components/layout/MainLayout';
 import ExpenseCard from '../components/economic/ExpenseCard';
 import ExpensesByCategorySection from '../components/economic/ExpensesByCategorySection';
 import TransactionHistory from '../components/economic/TransactionHistory';
@@ -257,6 +258,7 @@ function EconomicDashboard() {
   };
   
   return (
+    <MainLayout>
     <div className="economic-dashboard">
       <h1>Dashboard Económico</h1>
       
@@ -294,6 +296,7 @@ function EconomicDashboard() {
         />
       </div>
     </div>
+    </MainLayout>
   );
 }
 

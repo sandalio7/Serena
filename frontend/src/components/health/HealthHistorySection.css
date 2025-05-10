@@ -1,0 +1,18 @@
+.health-history-section {
+  background-color: #FFFDEB;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+.events-container {
+  margin-top: 20px;
+}
+
+.no-events {
+  text-align: center;
+  padding: 32px;
+  color: #E86A40;
+  font-weight: 500;
+}

@@ -1,0 +1,62 @@
+.health-status-card {
+  background-color: #FFFDEB;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.health-status-header {
+  color: #3D5036;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.health-status-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+}
+
+.health-status-icon {
+  background-color: #F8DC76;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow-icon {
+  font-size: 20px;
+  color: #3D5036;
+}
+
+.health-status-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-grow: 1;
+  padding-left: 16px;
+}
+
+.status-text {
+  font-size: 30px;
+  font-weight: 600;
+  color: #3D5036;
+  line-height: 1.2;
+}
+
+.score-text {
+  font-size: 24px;
+  color: #3D5036;
+}
+
+.health-status-emoji {
+  font-size: 32px;
+}

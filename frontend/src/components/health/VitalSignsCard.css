@@ -1,0 +1,93 @@
+.vital-signs-card {
+  background-color: #FFFDEB;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.vital-signs-header {
+  color: #3D5036;
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-align: center;
+  background-color: #FBF5D7;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.vital-signs-content {
+  display: flex;
+  justify-content: space-between;
+}
+
+.vital-signs-column {
+  flex: 1;
+  padding: 0 10px;
+}
+
+.vital-signs-column:first-child {
+  border-right: 1px solid #E7E6BE;
+}
+
+.normal-values {
+  color: #3D5036;
+}
+
+.vital-signs-column h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3D5036;
+  margin-bottom: 16px;
+}
+
+.vital-sign-item {
+  margin-bottom: 16px;
+}
+
+.vital-sign-label {
+  font-size: 16px;
+  color: #3D5036;
+  margin-bottom: 6px;
+}
+
+.vital-sign-value {
+  font-size: 18px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  color: #3D5036;
+}
+
+.status-indicator {
+  margin-left: 8px;
+  font-weight: normal;
+  font-size: 16px;
+}
+
+.status-indicator.normal {
+  color: #5B896A;
+}
+
+.status-indicator.moderate {
+  color: #E98E57;
+}
+
+.status-indicator.bad {
+  color: #E86A40;
+}
+
+@media (max-width: 480px) {
+  .vital-signs-content {
+    flex-direction: column;
+  }
+  
+  .vital-signs-column:first-child {
+    border-right: none;
+    border-bottom: 1px solid #E7E6BE;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+}
