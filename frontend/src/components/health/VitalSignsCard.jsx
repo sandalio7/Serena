@@ -6,8 +6,20 @@ import './VitalSignsCard.css';
  * @param {Object} props - Propiedades del componente
  * @param {Object} props.vitalSigns - Objeto con los signos vitales
  * @param {Object} props.normalValues - Valores normales para comparación
+ * @param {boolean} props.hasData - Indica si hay datos disponibles
  */
-const VitalSignsCard = ({ vitalSigns, normalValues }) => {
+const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
+  if (!hasData) {
+    return (
+      <div className="vital-signs-card">
+        <div className="no-data-message">
+          <p>No hay datos de signos vitales disponibles para hoy.</p>
+          <p>Los datos aparecerán aquí cuando el cuidador reporte información.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Función para determinar el estado de un valor vital
   const getStatusIndicator = (value, type) => {
     let status = 'normal';

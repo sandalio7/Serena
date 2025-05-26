@@ -9,11 +9,19 @@ import './HealthHistorySection.css';
  * @param {Object} props - Propiedades del componente
  * @param {Array} props.events - Lista de eventos de salud
  * @param {Function} props.onEditEvent - Función para editar un evento
+ * @param {string} props.activePeriod - Período activo
+ * @param {Function} props.setActivePeriod - Función para cambiar el período
+ * @param {string} props.activeCategory - Categoría activa
+ * @param {Function} props.setActiveCategory - Función para cambiar la categoría
  */
-const HealthHistorySection = ({ events, onEditEvent }) => {
-  // Estados para los filtros activos
-  const [activePeriod, setActivePeriod] = useState('day');
-  const [activeCategory, setActiveCategory] = useState('all');
+const HealthHistorySection = ({ 
+  events, 
+  onEditEvent, 
+  activePeriod, 
+  setActivePeriod, 
+  activeCategory, 
+  setActiveCategory 
+}) => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   
   // Efecto para filtrar eventos cuando cambian los filtros o los eventos
