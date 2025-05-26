@@ -188,13 +188,11 @@ function HealthDashboard() {
           hasData={healthData?.vitalSigns !== null}
         />
         
-        <h2 className="section-title">Resumen Semanal</h2>
         <WeeklySummaryCard 
           summaryData={healthData?.weeklySummary}
           hasData={healthData?.weeklySummary !== null}
         />
         
-        <h2 className="section-title">Historial</h2>
         <HealthHistorySection 
           events={historyEvents}
           onEditEvent={handleEditEvent}

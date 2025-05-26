@@ -8,8 +8,8 @@ import './VitalSignsCard.css';
  * @param {Object} props.normalValues - Valores normales para comparación
  * @param {boolean} props.hasData - Indica si hay datos disponibles
  */
-const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
-  if (!hasData) {
+const VitalSignsCard = ({ vitalSigns = {}, normalValues = {}, hasData }) => {
+  if (!hasData || !vitalSigns) {
     return (
       <div className="vital-signs-card">
         <div className="no-data-message">
@@ -20,13 +20,28 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
     );
   }
 
+  // Verificar que cada propiedad exista antes de usarla
+  const hasBloodPressure = vitalSigns.bloodPressure && 
+                          typeof vitalSigns.bloodPressure === 'object' && 
+                          'systolic' in vitalSigns.bloodPressure && 
+                          'diastolic' in vitalSigns.bloodPressure;
+                          
+  const hasTemperature = vitalSigns.temperature !== undefined;
+  const hasOxygenation = vitalSigns.oxygenation !== undefined;
+
   // Función para determinar el estado de un valor vital
   const getStatusIndicator = (value, type) => {
+    if (!value) return { status: 'normal', text: 'Sin datos' };
+    
     let status = 'normal';
     let text = 'Normal';
     
     switch(type) {
       case 'bloodPressure':
+        // Verificar que value contenga las propiedades necesarias
+        if (!value.systolic || !value.diastolic) return { status: 'normal', text: 'Sin datos' };
+        
+        // Lógica simplificada, en un caso real sería más compleja
         if (value.systolic > 140 || value.diastolic > 90) {
           status = 'bad';
           text = 'Mal';
@@ -36,7 +51,7 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
         }
         break;
       case 'temperature':
-        if (value > 37.5 && value <= 38) {
+        if (value > 37.5) {
           status = 'moderate';
           text = 'Moderado';
         } else if (value > 38) {
@@ -45,10 +60,10 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
         }
         break;
       case 'oxygenation':
-        if (value >= 95 && value < 98) {
+        if (value < 95) {
           status = 'moderate';
           text = 'Moderado';
-        } else if (value < 95) {
+        } else if (value < 90) {
           status = 'bad';
           text = 'Mal';
         }
@@ -60,13 +75,34 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
     return { status, text };
   };
 
-  // Determinar el estado de cada signo vital
-  const bloodPressureStatus = getStatusIndicator(vitalSigns.bloodPressure, 'bloodPressure');
-  const temperatureStatus = getStatusIndicator(vitalSigns.temperature, 'temperature');
-  const oxygenationStatus = getStatusIndicator(vitalSigns.oxygenation, 'oxygenation');
+  // Determinar el estado de cada signo vital con comprobaciones de seguridad
+  const bloodPressureStatus = hasBloodPressure 
+    ? getStatusIndicator(vitalSigns.bloodPressure, 'bloodPressure') 
+    : { status: 'normal', text: 'Sin datos' };
+    
+  const temperatureStatus = hasTemperature 
+    ? getStatusIndicator(vitalSigns.temperature, 'temperature') 
+    : { status: 'normal', text: 'Sin datos' };
+    
+  const oxygenationStatus = hasOxygenation 
+    ? getStatusIndicator(vitalSigns.oxygenation, 'oxygenation') 
+    : { status: 'normal', text: 'Sin datos' };
+
+  // Verificar valores normales
+  const hasNormalBloodPressure = normalValues.bloodPressure && 
+                                typeof normalValues.bloodPressure === 'object' &&
+                                'systolic' in normalValues.bloodPressure && 
+                                'diastolic' in normalValues.bloodPressure;
+                                
+  const hasNormalTemperature = normalValues.temperature !== undefined;
+  const hasNormalOxygenation = normalValues.oxygenation !== undefined;
 
   return (
     <div className="vital-signs-card">
+      <div className="vital-signs-header">
+        <span>Ultimo día</span>
+      </div>
+      
       <div className="vital-signs-content">
         <div className="vital-signs-column">
           <h3>Estado Físico</h3>
@@ -74,7 +110,9 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
           <div className="vital-sign-item">
             <div className="vital-sign-label">Presión arterial</div>
             <div className="vital-sign-value">
-              {`${vitalSigns.bloodPressure.systolic}/${vitalSigns.bloodPressure.diastolic}`}
+              {hasBloodPressure 
+                ? `${vitalSigns.bloodPressure.systolic}/${vitalSigns.bloodPressure.diastolic}`
+                : 'No disponible'}
               <span className={`status-indicator ${bloodPressureStatus.status}`}>
                 • {bloodPressureStatus.text}
               </span>
@@ -84,7 +122,9 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
           <div className="vital-sign-item">
             <div className="vital-sign-label">Temperatura</div>
             <div className="vital-sign-value">
-              {`${vitalSigns.temperature}°C`}
+              {hasTemperature 
+                ? `${vitalSigns.temperature}°C`
+                : 'No disponible'}
               <span className={`status-indicator ${temperatureStatus.status}`}>
                 • {temperatureStatus.text}
               </span>
@@ -94,7 +134,9 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
           <div className="vital-sign-item">
             <div className="vital-sign-label">Oxigenación</div>
             <div className="vital-sign-value">
-              {`${vitalSigns.oxygenation}%`}
+              {hasOxygenation 
+                ? `${vitalSigns.oxygenation}%`
+                : 'No disponible'}
               <span className={`status-indicator ${oxygenationStatus.status}`}>
                 • {oxygenationStatus.text}
               </span>
@@ -102,27 +144,33 @@ const VitalSignsCard = ({ vitalSigns, normalValues, hasData }) => {
           </div>
         </div>
         
-        <div className="vital-signs-column">
+        <div className="vital-signs-column normal-values">
           <h3>Valores normales</h3>
           
           <div className="vital-sign-item">
             <div className="vital-sign-label">Presión arterial</div>
-            <div className="vital-sign-value">
-              {`${normalValues.bloodPressure.systolic}/${normalValues.bloodPressure.diastolic}`}
+            <div className="vital-sign-value normal">
+              {hasNormalBloodPressure 
+                ? `${normalValues.bloodPressure.systolic}/${normalValues.bloodPressure.diastolic}`
+                : 'No definido'}
             </div>
           </div>
           
           <div className="vital-sign-item">
             <div className="vital-sign-label">Temperatura</div>
-            <div className="vital-sign-value">
-              {`${normalValues.temperature}°C`}
+            <div className="vital-sign-value normal">
+              {hasNormalTemperature 
+                ? `${normalValues.temperature}°C`
+                : 'No definido'}
             </div>
           </div>
           
           <div className="vital-sign-item">
             <div className="vital-sign-label">Oxigenación</div>
-            <div className="vital-sign-value">
-              {`${normalValues.oxygenation}%`}
+            <div className="vital-sign-value normal">
+              {hasNormalOxygenation 
+                ? `${normalValues.oxygenation}%`
+                : 'No definido'}
             </div>
           </div>
         </div>

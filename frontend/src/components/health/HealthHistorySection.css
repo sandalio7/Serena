@@ -1,9 +1,8 @@
 .health-history-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  background-color: #FBF5D7;
-  padding: 0;
+  background-color: #FFFDEB;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
 }
 
@@ -16,9 +15,4 @@
   padding: 32px;
   color: #E86A40;
   font-weight: 500;
-}
-.health-history-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
 }

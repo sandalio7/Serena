@@ -1,7 +1,8 @@
-.weekly-summary-container {
-  background-color: #FBF5D7;
+.weekly-summary-card {
+  background-color: #FFFDEB;
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   width: 100%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);

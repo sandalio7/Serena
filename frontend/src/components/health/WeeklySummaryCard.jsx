@@ -77,7 +77,11 @@ const WeeklySummaryCard = ({ summaryData, hasData }) => {
   };
 
   return (
-    <div className="weekly-summary-container">
+    <div className="weekly-summary-card">
+      <div className="weekly-summary-header">
+        <span>Resumen Semanal</span>
+      </div>
+      
       <div className="weekly-summary-grid">
         {renderCategoryCard('physical', summaryData?.physical)}
         {renderCategoryCard('cognitive', summaryData?.cognitive)}

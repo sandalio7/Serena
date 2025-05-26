@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import PeriodTabs from './PeriodTabs';
-import CategoryTabs from './CategoryTabs';
-import HealthEventsList from './HealthEventsList';
+import HistoryTabs from './HistoryTabs';
+import HealthEventItem from './HealthEventItem';
 import './HealthHistorySection.css';
 
 /**
@@ -84,20 +83,28 @@ const HealthHistorySection = ({
   
   return (
     <div className="health-history-section">
-      <PeriodTabs 
+      <HistoryTabs 
         activePeriod={activePeriod}
         onPeriodChange={setActivePeriod}
-      />
-      
-      <CategoryTabs 
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
       
-      <HealthEventsList 
-        events={eventsWithNames}
-        onEditEvent={onEditEvent}
-      />
+      <div className="events-container">
+        {eventsWithNames.length > 0 ? (
+          eventsWithNames.map(event => (
+            <HealthEventItem 
+              key={event.id}
+              event={event}
+              onEdit={onEditEvent}
+            />
+          ))
+        ) : (
+          <div className="no-events">
+            <p>No hay datos para el período seleccionado</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
