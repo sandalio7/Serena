@@ -40,9 +40,9 @@ def get_health_summary():
     # Inicializar valores por defecto
     default_response = {
         'physicalVars': {
-            'bloodPressure': {'value': '120/80', 'status': 'Normal'},
-            'temperature': {'value': '36.5', 'status': 'Normal'},
-            'oxygenSaturation': {'value': '98', 'status': 'Normal'},
+            'bloodPressure': {'value': '120/81', 'status': 'Normal'},  # Cambiado de 120/80 a 120/81
+            'temperature': {'value': '36.6', 'status': 'Normal'},      # Cambiado de 36.5 a 36.6
+            'oxygenSaturation': {'value': '97', 'status': 'Normal'},   # Cambiado de 98 a 97
             'weight': {'value': '70', 'status': 'Normal', 'bmi': '24'}
         },
         'sleep': {'hours': '8', 'status': 'Normal'},
@@ -61,36 +61,49 @@ def get_health_summary():
         'generalConclusion': 'Bueno'
     }
     
-    # Obtener datos clasificados usando la nueva estructura normalizada
-    # Primero, obtener los mensajes más recientes
+    # Debug: Registrar información de búsqueda
+    print(f"Buscando datos de salud para paciente {patient_id} desde {start_date}")
+    
+    # Verificar si hay mensajes para este paciente en el período
     messages = Message.query.filter(
         Message.patient_id == patient_id,
         Message.created_at >= start_date
-    ).order_by(Message.created_at.desc()).limit(10).all()
+    ).order_by(Message.created_at.desc()).all()
+    
+    print(f"Encontrados {len(messages)} mensajes para el paciente {patient_id}")
     
     if not messages:
+        print("No se encontraron mensajes, devolviendo respuesta predeterminada")
         return jsonify(default_response)
     
     message_ids = [m.id for m in messages]
     
-    # Inicializar variables
+    # Inicializar variables con valores predeterminados
     physical_vars = default_response['physicalVars']
     sleep_data = default_response['sleep']
     cognitive_state = default_response['cognitiveState']
     physical_state = default_response['physicalState']
     emotional_state = default_response['emotionalState']
     
+    # Contar clasificaciones por categoría (para debug)
+    health_values_count = 0
+    
     # Obtener valores físicos (temperatura, presión, etc.)
     # Categoría: Salud Física
     physical_category = Category.query.filter(Category.name == 'Salud Física').first()
     if physical_category:
+        print(f"Encontrada categoría: {physical_category.name} (ID: {physical_category.id})")
+        
+        # Obtener todas las subcategorías físicas
+        subcategories = Subcategory.query.filter(Subcategory.category_id == physical_category.id).all()
+        print(f"Subcategorías físicas encontradas: {[s.name for s in subcategories]}")
+        
         # Subcategoría: Síntomas (para temperatura, presión, etc.)
-        symptoms_subcat = Subcategory.query.filter(
-            Subcategory.category_id == physical_category.id,
-            Subcategory.name == 'Síntomas'
-        ).first()
+        symptoms_subcat = next((s for s in subcategories if s.name == 'Síntomas'), None)
         
         if symptoms_subcat:
+            print(f"Encontrada subcategoría: {symptoms_subcat.name} (ID: {symptoms_subcat.id})")
+            
             # Buscar valores relacionados con síntomas
             symptom_values = ClassifiedValue.query.join(
                 Message, ClassifiedValue.message_id == Message.id
@@ -99,7 +112,11 @@ def get_health_summary():
                 Message.id.in_(message_ids)
             ).order_by(Message.created_at.desc()).all()
             
+            print(f"Valores de síntomas encontrados: {len(symptom_values)}")
+            health_values_count += len(symptom_values)
+            
             for value in symptom_values:
+                print(f"Procesando valor: {value.value} (confianza: {value.confidence})")
                 value_text = value.value.lower()
                 
                 # Temperatura
@@ -112,6 +129,7 @@ def get_health_summary():
                             'value': temp_value,
                             'status': get_status_from_confidence(value.confidence)
                         }
+                        print(f"Actualizada temperatura: {temp_value}")
                 
                 # Presión arterial
                 elif 'presión' in value_text or 'presion' in value_text:
@@ -123,6 +141,7 @@ def get_health_summary():
                             'value': bp_value,
                             'status': get_status_from_confidence(value.confidence)
                         }
+                        print(f"Actualizada presión arterial: {bp_value}")
                 
                 # Oxigenación
                 elif 'oxígeno' in value_text or 'oxigeno' in value_text:
@@ -134,14 +153,14 @@ def get_health_summary():
                             'value': ox_value,
                             'status': get_status_from_confidence(value.confidence)
                         }
+                        print(f"Actualizada oxigenación: {ox_value}")
         
         # Subcategoría: Movilidad (para estado físico)
-        mobility_subcat = Subcategory.query.filter(
-            Subcategory.category_id == physical_category.id,
-            Subcategory.name == 'Movilidad'
-        ).first()
+        mobility_subcat = next((s for s in subcategories if s.name == 'Movilidad'), None)
         
         if mobility_subcat:
+            print(f"Encontrada subcategoría: {mobility_subcat.name} (ID: {mobility_subcat.id})")
+            
             # Buscar valores relacionados con movilidad
             mobility_value = ClassifiedValue.query.join(
                 Message, ClassifiedValue.message_id == Message.id
@@ -151,18 +170,20 @@ def get_health_summary():
             ).order_by(Message.created_at.desc()).first()
             
             if mobility_value:
+                health_values_count += 1
+                print(f"Encontrado valor de movilidad: {mobility_value.value}")
                 physical_state = {
                     'rating': int(mobility_value.confidence * 10),
                     'description': mobility_value.value
                 }
+                print(f"Actualizado estado físico: {physical_state}")
         
         # Subcategoría: Sueño
-        sleep_subcat = Subcategory.query.filter(
-            Subcategory.category_id == physical_category.id,
-            Subcategory.name == 'Sueño'
-        ).first()
+        sleep_subcat = next((s for s in subcategories if s.name == 'Sueño'), None)
         
         if sleep_subcat:
+            print(f"Encontrada subcategoría: {sleep_subcat.name} (ID: {sleep_subcat.id})")
+            
             # Buscar valores relacionados con sueño
             sleep_value = ClassifiedValue.query.join(
                 Message, ClassifiedValue.message_id == Message.id
@@ -172,6 +193,9 @@ def get_health_summary():
             ).order_by(Message.created_at.desc()).first()
             
             if sleep_value:
+                health_values_count += 1
+                print(f"Encontrado valor de sueño: {sleep_value.value}")
+                
                 # Extraer horas de sueño
                 import re
                 hours_match = re.search(r'(\d+(?:[.,]\d+)?)\s*(?:horas|hs)', sleep_value.value.lower())
@@ -185,10 +209,15 @@ def get_health_summary():
                         'hours': hours,
                         'status': get_status_from_value(sleep_hours)
                     }
+                    print(f"Actualizado sueño: {sleep_data}")
+    else:
+        print("No se encontró la categoría 'Salud Física'")
     
     # Obtener estado cognitivo
     cognitive_category = Category.query.filter(Category.name == 'Salud Cognitiva').first()
     if cognitive_category:
+        print(f"Encontrada categoría: {cognitive_category.name} (ID: {cognitive_category.id})")
+        
         # Obtener cualquier subcategoría cognitiva
         cognitive_value = ClassifiedValue.query.join(
             Subcategory, ClassifiedValue.subcategory_id == Subcategory.id
@@ -200,14 +229,21 @@ def get_health_summary():
         ).order_by(Message.created_at.desc()).first()
         
         if cognitive_value:
+            health_values_count += 1
+            print(f"Encontrado valor cognitivo: {cognitive_value.value}")
             cognitive_state = {
                 'rating': int(cognitive_value.confidence * 10),
                 'description': cognitive_value.value
             }
+            print(f"Actualizado estado cognitivo: {cognitive_state}")
+    else:
+        print("No se encontró la categoría 'Salud Cognitiva'")
     
     # Obtener estado emocional
     emotional_category = Category.query.filter(Category.name == 'Estado Emocional').first()
     if emotional_category:
+        print(f"Encontrada categoría: {emotional_category.name} (ID: {emotional_category.id})")
+        
         # Obtener cualquier subcategoría emocional
         emotional_value = ClassifiedValue.query.join(
             Subcategory, ClassifiedValue.subcategory_id == Subcategory.id
@@ -219,10 +255,17 @@ def get_health_summary():
         ).order_by(Message.created_at.desc()).first()
         
         if emotional_value:
+            health_values_count += 1
+            print(f"Encontrado valor emocional: {emotional_value.value}")
             emotional_state = {
                 'rating': int(emotional_value.confidence * 10),
                 'description': emotional_value.value
             }
+            print(f"Actualizado estado emocional: {emotional_state}")
+    else:
+        print("No se encontró la categoría 'Estado Emocional'")
+    
+    print(f"Total de valores de salud encontrados: {health_values_count}")
     
     # Calcular conclusión general
     ratings = [
@@ -249,6 +292,7 @@ def get_health_summary():
         'generalConclusion': conclusion
     }
     
+    print(f"Respuesta final: {result}")
     return jsonify(result)
 
 @health_bp.route('/metrics/<metric_type>', methods=['GET'])
