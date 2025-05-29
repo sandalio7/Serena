@@ -1,3 +1,4 @@
+// HealthDashboard.jsx - ACTUALIZADO
 import { useState, useEffect, useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import VitalSignsCard from '../components/health/VitalSignsCard';
@@ -6,7 +7,6 @@ import HealthHistorySection from '../components/health/HealthHistorySection';
 import { 
   getHealthSummary, 
   getHealthHistory,
-  getHealthDataMock,
   updateHealthEvent
 } from '../services/healthService';
 import './HealthDashboard.css';
@@ -51,15 +51,7 @@ function HealthDashboard() {
       
     } catch (error) {
       console.error('Error cargando datos de salud:', error);
-      
-      // Si hay error y no tenemos datos previos, usar datos mock para desarrollo
-      if (process.env.NODE_ENV === 'development' && !healthData) {
-        console.log('Usando datos mock por error en el backend');
-        const mockData = getHealthDataMock();
-        setHealthData(mockData);
-      } else if (!healthData) {
-        setError('No se pudieron cargar los datos de salud');
-      }
+      setError('No se pudieron cargar los datos de salud');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -73,12 +65,7 @@ function HealthDashboard() {
       setHistoryEvents(history);
     } catch (error) {
       console.error('Error cargando historial:', error);
-      
-      // Si hay error, usar datos mock para el historial
-      if (process.env.NODE_ENV === 'development') {
-        const mockData = getHealthDataMock();
-        setHistoryEvents(mockData.historyEvents);
-      }
+      setHistoryEvents([]); // En caso de error, simplemente mostrar lista vacía
     }
   };
   
@@ -134,7 +121,9 @@ function HealthDashboard() {
   const handleEditEvent = async (event) => {
     try {
       console.log('Editando evento:', event);
-      // Por ahora, solo mostrar en consola
+      await updateHealthEvent(event.id, event);
+      // Recargar historial después de editar
+      loadHistory();
     } catch (error) {
       console.error('Error actualizando evento:', error);
     }

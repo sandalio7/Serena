@@ -2,10 +2,13 @@
 from flask import Blueprint, jsonify, request
 from ..models.classified_data import ClassifiedData
 from ..models.patient import Patient
+from ..models.message import Message
+from ..models.category import Category
+from ..models.subcategory import Subcategory
+from ..models.classified_value import ClassifiedValue
 from ..extensions import db
 import json
 from datetime import datetime, timedelta
-from ..models.message import Message
 
 # Crear blueprint para datos financieros
 financial_bp = Blueprint('financial', __name__, url_prefix='/api/financial')
@@ -36,48 +39,57 @@ def get_financial_summary():
     else:  # month
         start_date = today - timedelta(days=30)
     
-    # Obtener datos clasificados para el período
-    data_query = ClassifiedData.query.filter(
-        ClassifiedData.patient_id == patient_id,
-        ClassifiedData.created_at >= start_date
-    ).all()
-    
-    # Calcular resumen financiero
+    # Obtener datos de gastos usando la nueva estructura normalizada
     total_income = 0
     total_expenses = 0
     categories = {}
     
-    for data in data_query:
-        # Procesar gastos
-        if data.expenses:
-            expenses_dict = json.loads(data.expenses)
+    # Buscar categoría de Gastos
+    expenses_category = Category.query.filter(Category.name == 'Gastos').first()
+    
+    if expenses_category:
+        # Obtener todas las subcategorías de gastos
+        expense_subcategories = Subcategory.query.filter(Subcategory.category_id == expenses_category.id).all()
+        subcategory_ids = [subcat.id for subcat in expense_subcategories]
+        
+        # Obtener valores clasificados para gastos
+        expense_values = ClassifiedValue.query.join(
+            Message, ClassifiedValue.message_id == Message.id
+        ).filter(
+            ClassifiedValue.subcategory_id.in_(subcategory_ids),
+            Message.patient_id == patient_id,
+            Message.created_at >= start_date
+        ).all()
+        
+        # Procesar cada valor de gasto
+        for value in expense_values:
+            subcategory = Subcategory.query.get(value.subcategory_id)
+            subcategory_name = subcategory.name
             
-            # Procesar cada subcategoría encontrada
-            for item in expenses_dict:
-                category_name = item.get('nombre', 'Otros')
-                amount_str = item.get('valor', '0')
-                
-                # Extraer solo valores numéricos
-                import re
-                amount_match = re.search(r'(\d+(?:\.\d+)?)', amount_str)
-                if amount_match:
-                    amount = float(amount_match.group(1))
-                else:
-                    continue
-                
-                # Agrupar por categoría
-                if category_name in categories:
-                    categories[category_name]['amount'] += amount
-                else:
-                    # Asignar un color según la categoría
-                    color = get_category_color(category_name)
-                    categories[category_name] = {
-                        'name': category_name,
-                        'amount': amount,
-                        'color': color
-                    }
-                
-                total_expenses += amount
+            # Extraer monto del valor
+            amount_str = value.value
+            
+            # Extraer solo valores numéricos
+            import re
+            amount_match = re.search(r'(\d+(?:\.\d+)?)', amount_str)
+            if amount_match:
+                amount = float(amount_match.group(1))
+            else:
+                continue
+            
+            # Agrupar por categoría
+            if subcategory_name in categories:
+                categories[subcategory_name]['amount'] += amount
+            else:
+                # Asignar un color según la categoría
+                color = get_category_color(subcategory_name)
+                categories[subcategory_name] = {
+                    'name': subcategory_name,
+                    'amount': amount,
+                    'color': color
+                }
+            
+            total_expenses += amount
     
     # Transformar categorías a lista para el frontend
     categories_list = list(categories.values())
@@ -114,44 +126,53 @@ def get_expenses_by_category():
     else:  # month
         start_date = today - timedelta(days=30)
     
-    # Obtener datos clasificados para el período
-    data_query = ClassifiedData.query.filter(
-        ClassifiedData.patient_id == patient_id,
-        ClassifiedData.created_at >= start_date
-    ).all()
-    
-    # Calcular categorías
+    # Obtener datos de gastos usando la nueva estructura normalizada
     categories = {}
     
-    for data in data_query:
-        # Procesar gastos
-        if data.expenses:
-            expenses_dict = json.loads(data.expenses)
+    # Buscar categoría de Gastos
+    expenses_category = Category.query.filter(Category.name == 'Gastos').first()
+    
+    if expenses_category:
+        # Obtener todas las subcategorías de gastos
+        expense_subcategories = Subcategory.query.filter(Subcategory.category_id == expenses_category.id).all()
+        subcategory_ids = [subcat.id for subcat in expense_subcategories]
+        
+        # Obtener valores clasificados para gastos
+        expense_values = ClassifiedValue.query.join(
+            Message, ClassifiedValue.message_id == Message.id
+        ).filter(
+            ClassifiedValue.subcategory_id.in_(subcategory_ids),
+            Message.patient_id == patient_id,
+            Message.created_at >= start_date
+        ).all()
+        
+        # Procesar cada valor de gasto
+        for value in expense_values:
+            subcategory = Subcategory.query.get(value.subcategory_id)
+            subcategory_name = subcategory.name
             
-            # Procesar cada subcategoría encontrada
-            for item in expenses_dict:
-                category_name = item.get('nombre', 'Otros')
-                amount_str = item.get('valor', '0')
-                
-                # Extraer solo valores numéricos
-                import re
-                amount_match = re.search(r'(\d+(?:\.\d+)?)', amount_str)
-                if amount_match:
-                    amount = float(amount_match.group(1))
-                else:
-                    continue
-                
-                # Agrupar por categoría
-                if category_name in categories:
-                    categories[category_name]['amount'] += amount
-                else:
-                    # Asignar un color según la categoría
-                    color = get_category_color(category_name)
-                    categories[category_name] = {
-                        'name': category_name,
-                        'amount': amount,
-                        'color': color
-                    }
+            # Extraer monto del valor
+            amount_str = value.value
+            
+            # Extraer solo valores numéricos
+            import re
+            amount_match = re.search(r'(\d+(?:\.\d+)?)', amount_str)
+            if amount_match:
+                amount = float(amount_match.group(1))
+            else:
+                continue
+            
+            # Agrupar por categoría
+            if subcategory_name in categories:
+                categories[subcategory_name]['amount'] += amount
+            else:
+                # Asignar un color según la categoría
+                color = get_category_color(subcategory_name)
+                categories[subcategory_name] = {
+                    'name': subcategory_name,
+                    'amount': amount,
+                    'color': color
+                }
     
     # Transformar categorías a lista para el frontend
     categories_list = list(categories.values())
@@ -182,7 +203,7 @@ def register_transaction():
     
     # Crear estructura para la nueva transacción
     transaction_type = data['type']  # 'income' o 'expense'
-    category = data['category']
+    category_name = data['category']
     amount = float(data['amount'])
     transaction_date = data['date']
     
@@ -190,7 +211,7 @@ def register_transaction():
     import datetime
     
     # Crear mensaje artificial
-    message_text = f"Registro manual: {transaction_type} de ${amount} en categoría {category} del {transaction_date}"
+    message_text = f"Registro manual: {transaction_type} de ${amount} en categoría {category_name} del {transaction_date}"
     message = Message(
         content=message_text,
         caregiver_id=1,  # ID por defecto
@@ -200,26 +221,56 @@ def register_transaction():
     db.session.add(message)
     db.session.commit()
     
-    # Crear estructura de datos clasificados
+    # Crear estructura de datos clasificados (para compatibilidad)
     expenses_data = []
     if transaction_type == 'expense':
         expenses_data = [{
-            'nombre': category,
+            'nombre': category_name,
             'valor': str(amount),
             'confianza': 1.0
         }]
     
-    # Guardar datos clasificados
+    # Guardar datos clasificados (para compatibilidad)
     classified_data = ClassifiedData(
         raw_data=json.dumps({"manual_entry": True}),
         expenses=json.dumps(expenses_data),
-        summary=f"Registro manual: {transaction_type} de ${amount} en {category}",
+        summary=f"Registro manual: {transaction_type} de ${amount} en {category_name}",
         message_id=message.id,
         patient_id=patient_id,
         created_at=datetime.datetime.strptime(transaction_date, '%Y-%m-%d')
     )
     
     db.session.add(classified_data)
+    
+    # Guardar en la nueva estructura normalizada
+    if transaction_type == 'expense':
+        # Buscar categoría de gastos
+        expenses_category = Category.query.filter(Category.name == 'Gastos').first()
+        
+        if expenses_category:
+            # Buscar la subcategoría correspondiente
+            subcategory = Subcategory.query.filter(
+                Subcategory.category_id == expenses_category.id,
+                Subcategory.name == category_name
+            ).first()
+            
+            # Si no existe la subcategoría, usar "Otros"
+            if not subcategory:
+                subcategory = Subcategory.query.filter(
+                    Subcategory.category_id == expenses_category.id,
+                    Subcategory.name == 'Otros'
+                ).first()
+            
+            if subcategory:
+                # Crear valor clasificado
+                classified_value = ClassifiedValue(
+                    message_id=message.id,
+                    subcategory_id=subcategory.id,
+                    value=f"${amount}",
+                    confidence=1.0
+                )
+                db.session.add(classified_value)
+    
     db.session.commit()
     
     return jsonify({
@@ -227,7 +278,7 @@ def register_transaction():
         'message': 'Transacción registrada correctamente',
         'transaction': {
             'type': transaction_type,
-            'category': category,
+            'category': category_name,
             'amount': amount,
             'date': transaction_date
         }
@@ -273,33 +324,37 @@ def get_messages_history():
     else:  # month
         start_date = today - timedelta(days=30)
     
-    # Obtener mensajes con datos clasificados
-    history_data = db.session.query(ClassifiedData, Message).join(
-        Message, ClassifiedData.message_id == Message.id
-    ).filter(
-        ClassifiedData.patient_id == patient_id,
-        ClassifiedData.created_at >= start_date,
-        ClassifiedData.expenses.isnot(None)  # Solo mensajes con gastos
-    ).order_by(
-        ClassifiedData.created_at.desc()
-    ).all()
-    
-    # Preparar datos para el frontend
+    # Obtener datos de gastos usando la nueva estructura normalizada
     result = []
     
-    for data, message in history_data:
-        # Solo procesar si hay gastos
-        if not data.expenses:
-            continue
-            
-        expenses_list = json.loads(data.expenses)
+    # Buscar categoría de Gastos
+    expenses_category = Category.query.filter(Category.name == 'Gastos').first()
+    
+    if expenses_category:
+        # Obtener todas las subcategorías de gastos
+        expense_subcategories = Subcategory.query.filter(Subcategory.category_id == expenses_category.id).all()
+        subcategory_ids = [subcat.id for subcat in expense_subcategories]
         
-        # Procesar cada gasto encontrado en el mensaje
-        for expense in expenses_list:
-            category_name = expense.get('nombre', 'Otros')
-            amount_str = expense.get('valor', '0')
+        # Obtener valores clasificados para gastos
+        expense_values = ClassifiedValue.query.join(
+            Message, ClassifiedValue.message_id == Message.id
+        ).join(
+            Subcategory, ClassifiedValue.subcategory_id == Subcategory.id
+        ).filter(
+            ClassifiedValue.subcategory_id.in_(subcategory_ids),
+            Message.patient_id == patient_id,
+            Message.created_at >= start_date
+        ).order_by(Message.created_at.desc()).all()
+        
+        # Procesar cada valor de gasto
+        for value in expense_values:
+            message = Message.query.get(value.message_id)
+            subcategory = Subcategory.query.get(value.subcategory_id)
             
-            # Extraer valor numérico
+            # Extraer monto del valor
+            amount_str = value.value
+            
+            # Extraer solo valores numéricos
             import re
             amount_match = re.search(r'(\d+(?:\.\d+)?)', amount_str)
             if amount_match:
@@ -307,23 +362,25 @@ def get_messages_history():
             else:
                 continue
             
+            # Buscar si hay un ClassifiedData relacionado para verificar si es editado
+            classified_data = ClassifiedData.query.filter_by(message_id=message.id).first()
+            is_edited = classified_data and getattr(classified_data, 'edited', False)
+            
             # Añadir a resultados
             result.append({
-                'id': data.id,  # ID de ClassifiedData para editar/eliminar
+                'id': value.id,  # ID de ClassifiedValue para editar/eliminar
                 'category': {
-                    'name': category_name,
-                    'color': get_category_color(category_name)
+                    'name': subcategory.name,
+                    'color': get_category_color(subcategory.name)
                 },
                 'amount': amount,
-                'date': data.created_at.isoformat(),
+                'date': value.created_at.isoformat(),
                 'message': message.content,
                 'message_id': message.id,
-                'edited': getattr(data, 'edited', False)  # Añadir campo edited
+                'edited': is_edited  # Campo edited
             })
     
     return jsonify(result)
-
-# Añadir al final del archivo financial_data.py
 
 @financial_bp.route('/transactions/<int:transaction_id>', methods=['PUT'])
 def update_transaction(transaction_id):
@@ -334,17 +391,20 @@ def update_transaction(transaction_id):
     if not data:
         return jsonify({'error': 'No se recibieron datos'}), 400
     
-    # Buscar la transacción (el mensaje y los datos clasificados)
-    classified_data = ClassifiedData.query.get(transaction_id)
+    # Buscar la transacción en ambas estructuras
+    classified_value = ClassifiedValue.query.get(transaction_id)
     
-    if not classified_data:
+    if not classified_value:
         return jsonify({'error': 'Transacción no encontrada'}), 404
     
     # Obtener el mensaje asociado
-    message = Message.query.get(classified_data.message_id)
+    message = Message.query.get(classified_value.message_id)
     
     if not message:
         return jsonify({'error': 'Mensaje asociado no encontrado'}), 404
+    
+    # Buscar también en la estructura antigua para compatibilidad
+    classified_data = ClassifiedData.query.filter_by(message_id=message.id).first()
     
     # Actualizar campos
     try:
@@ -354,19 +414,24 @@ def update_transaction(transaction_id):
         
         # Actualizar monto si se proporcionó
         if 'amount' in data:
-            # Obtener datos actuales
-            expenses_data = json.loads(classified_data.expenses)
+            # Actualizar en la nueva estructura
+            classified_value.value = f"${data['amount']}"
             
-            if expenses_data:
-                # Actualizar el primer elemento (asumiendo que solo hay uno por mensaje)
-                expenses_data[0]['valor'] = str(data['amount'])
-                classified_data.expenses = json.dumps(expenses_data)
+            # Actualizar también en la estructura antigua si existe
+            if classified_data:
+                # Obtener datos actuales
+                expenses_data = json.loads(classified_data.expenses)
                 
-                # Actualizar el resumen
-                classified_data.summary = f"Registro {data.get('edited', False) and 'editado' or 'manual'}: {message.content}"
-        
-        # Marcar como editado
-        classified_data.edited = True
+                if expenses_data:
+                    # Actualizar el primer elemento (asumiendo que solo hay uno por mensaje)
+                    expenses_data[0]['valor'] = str(data['amount'])
+                    classified_data.expenses = json.dumps(expenses_data)
+                    
+                    # Actualizar el resumen
+                    classified_data.summary = f"Registro {data.get('edited', False) and 'editado' or 'manual'}: {message.content}"
+                
+                # Marcar como editado
+                classified_data.edited = True
         
         # Guardar cambios
         db.session.commit()
@@ -375,10 +440,10 @@ def update_transaction(transaction_id):
             'success': True,
             'message': 'Transacción actualizada correctamente',
             'transaction': {
-                'id': classified_data.id,
+                'id': classified_value.id,
                 'message_id': message.id,
                 'description': message.content,
-                'edited': classified_data.edited
+                'edited': classified_data.edited if classified_data else True
             }
         })
     except Exception as e:
@@ -390,17 +455,23 @@ def update_transaction(transaction_id):
 def delete_transaction(transaction_id):
     """Eliminar una transacción"""
     try:
-        # Buscar la transacción (datos clasificados)
-        classified_data = ClassifiedData.query.get(transaction_id)
+        # Buscar la transacción en la nueva estructura
+        classified_value = ClassifiedValue.query.get(transaction_id)
         
-        if not classified_data:
+        if not classified_value:
             return jsonify({'error': 'Transacción no encontrada'}), 404
         
         # Obtener el mensaje asociado
-        message = Message.query.get(classified_data.message_id)
+        message = Message.query.get(classified_value.message_id)
         
-        # Eliminar primero los datos clasificados
-        db.session.delete(classified_data)
+        # Buscar también en la estructura antigua para compatibilidad
+        classified_data = ClassifiedData.query.filter_by(message_id=message.id).first()
+        
+        # Eliminar primero los datos clasificados (ambas estructuras)
+        db.session.delete(classified_value)
+        
+        if classified_data:
+            db.session.delete(classified_data)
         
         # Si se encontró el mensaje, eliminarlo también
         if message:

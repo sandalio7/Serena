@@ -12,6 +12,8 @@ class Message(Base):
     caregiver_id = db.Column(db.Integer, db.ForeignKey('caregivers.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
     classified_data = db.relationship('ClassifiedData', backref='message', uselist=False)
+    # Nueva relación con ClassifiedValue
+    classified_values = db.relationship('ClassifiedValue', backref='message', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Message {self.id}>"

@@ -1,4 +1,4 @@
-// services/healthService.js
+// services/healthService.js - ACTUALIZADO
 
 /**
  * API de endpoints para el dashboard de salud
@@ -147,9 +147,32 @@ export const getHealthHistory = async (patientId, period = 'day', category = 'al
  */
 export const updateHealthEvent = async (eventId, eventData) => {
   try {
-    // Por ahora, retornar los mismos datos ya que no está implementado en el backend
-    console.log('Actualización de eventos no implementada en el backend');
-    return { ...eventData, id: eventId };
+    const response = await fetch(`${API_ENDPOINTS.HEALTH_HISTORY}/${eventId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        value: eventData.description,
+        category: mapFrontendToBackendCategory(eventData.category),
+        rating: eventData.score || 5
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al actualizar evento de salud');
+    }
+    
+    return {
+      id: data.id,
+      category: mapBackendToFrontendCategory(data.category),
+      categoryName: data.category,
+      description: data.value,
+      date: formatDate(data.date, data.time),
+      score: data.rating
+    };
   } catch (error) {
     console.error('Error en updateHealthEvent:', error);
     throw error;
@@ -159,6 +182,19 @@ export const updateHealthEvent = async (eventId, eventData) => {
 /**
  * Funciones auxiliares
  */
+function getStatusFromConclusion(conclusion) {
+  switch (conclusion) {
+    case 'Bueno':
+      return 'Bueno';
+    case 'Regular':
+      return 'Regular';
+    case 'Malo':
+      return 'Malo';
+    default:
+      return 'Regular';
+  }
+}
+
 function getScoreFromConclusion(conclusion) {
   switch (conclusion) {
     case 'Bueno':
@@ -187,13 +223,28 @@ function getEmojiFromConclusion(conclusion) {
 
 function mapBackendToFrontendCategory(backendCategory) {
   const categoryMap = {
+    'Estado Físico': 'physical',
     'Salud Física': 'physical',
+    'Estado cognitivo': 'cognitive',
     'Estado Cognitivo': 'cognitive',
+    'Estado emocional': 'emotional',
     'Estado Emocional': 'emotional',
-    'Medicación': 'autonomy' // Tratamos medicación como parte de autonomía
+    'Medicación': 'autonomy', // Tratamos medicación como parte de autonomía
+    'Autonomía': 'autonomy'
   };
   
   return categoryMap[backendCategory] || 'physical';
+}
+
+function mapFrontendToBackendCategory(frontendCategory) {
+  const categoryMap = {
+    'physical': 'Estado Físico',
+    'cognitive': 'Estado Cognitivo',
+    'emotional': 'Estado Emocional',
+    'autonomy': 'Autonomía'
+  };
+  
+  return categoryMap[frontendCategory] || 'Estado Físico';
 }
 
 function formatDate(date, time) {
@@ -202,65 +253,3 @@ function formatDate(date, time) {
   const [hour, minute] = time.split(':');
   return new Date(year, month - 1, day, hour, minute).toISOString();
 }
-
-/**
- * Datos mock para desarrollo/testing - mantener para fallback
- */
-export const getHealthDataMock = () => {
-  return {
-    hasData: true,
-    currentStatus: {
-      status: "Regular",
-      score: "6",
-      emoji: "🙂"
-    },
-    vitalSigns: {
-      bloodPressure: { systolic: 130, diastolic: 80 },
-      temperature: 35.5,
-      oxygenation: 80
-    },
-    normalValues: {
-      bloodPressure: { systolic: 130, diastolic: 80 },
-      temperature: 36.5,
-      oxygenation: 98
-    },
-    weeklySummary: {
-      physical: {
-        score: 8,
-        description: "Camino 100 metros, dimos una vuelta a la plaza"
-      },
-      cognitive: {
-        score: 6,
-        description: "Estuvo desorientado durante el día, no encontraba su guitarra"
-      },
-      emotional: {
-        score: 10,
-        description: "Hoy nos saludo a todos cuando se despertó, está contento"
-      },
-      autonomy: {
-        score: 4,
-        description: "Tuvimos que ayudarlo a sentarse y levantarse del sillón"
-      }
-    },
-    historyEvents: [
-      {
-        id: 1,
-        category: 'physical',
-        description: "El cuidador cobró $5.000 este mes",
-        date: '2025-04-12T10:30:00'
-      },
-      {
-        id: 2,
-        category: 'physical',
-        description: "El cuidador cobró $5.000 este mes",
-        date: '2025-04-12T14:45:00'
-      },
-      {
-        id: 3,
-        category: 'cognitive',
-        description: "Gasté $8.000 en el servicio de cuidador",
-        date: '2025-04-12T16:20:00'
-      }
-    ]
-  };
-};

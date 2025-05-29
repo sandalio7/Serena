@@ -1,3 +1,4 @@
+// HealthHistorySection.jsx - ACTUALIZADO
 import React, { useState, useEffect } from 'react';
 import HistoryTabs from './HistoryTabs';
 import HealthEventItem from './HealthEventItem';
@@ -57,29 +58,14 @@ const HealthHistorySection = ({
         return matchesPeriod && matchesCategory;
       });
       
+      // Ordenar por fecha (más reciente primero)
+      filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
       setFilteredEvents(filtered);
     };
     
     filterEvents();
   }, [events, activePeriod, activeCategory]);
-  
-  // Transformar nombre de categoría para mostrar
-  const getCategoryName = (category) => {
-    const categoryMap = {
-      'physical': 'Estado Físico',
-      'cognitive': 'Estado cognitivo',
-      'emotional': 'Estado Emocional',
-      'autonomy': 'Autonomía'
-    };
-    
-    return categoryMap[category] || category;
-  };
-  
-  // Añadir nombre de categoría a cada evento
-  const eventsWithNames = filteredEvents.map(event => ({
-    ...event,
-    categoryName: getCategoryName(event.category)
-  }));
   
   return (
     <div className="health-history-section">
@@ -91,8 +77,8 @@ const HealthHistorySection = ({
       />
       
       <div className="events-container">
-        {eventsWithNames.length > 0 ? (
-          eventsWithNames.map(event => (
+        {filteredEvents.length > 0 ? (
+          filteredEvents.map(event => (
             <HealthEventItem 
               key={event.id}
               event={event}

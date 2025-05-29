@@ -1,9 +1,13 @@
 #backend/app/services/classification_service.py
 import logging
+import json
 from datetime import datetime
 from app.extensions import db
 from app.models.message import Message
 from app.models.classified_data import ClassifiedData
+from app.models.category import Category
+from app.models.subcategory import Subcategory
+from app.models.classified_value import ClassifiedValue
 from app.services.gemini_service import GeminiService
 
 # Configuración de logging
@@ -78,12 +82,10 @@ class ClassificationService:
             patient_id (int): ID del paciente
         """
         try:
-            import json
-            
             # Convertir datos a JSON
             raw_data_json = json.dumps(classification_data, ensure_ascii=False)
             
-            # Extraer datos por categoría
+            # Extraer datos por categoría para mantener compatibilidad con la estructura anterior
             physical_health = self._extract_category_data(classification_data, "Salud Física")
             cognitive_health = self._extract_category_data(classification_data, "Salud Cognitiva")
             emotional_state = self._extract_category_data(classification_data, "Estado Emocional")
@@ -93,7 +95,7 @@ class ClassificationService:
             # Obtener resumen
             summary = classification_data.get("resumen", "")
             
-            # Crear registro de datos clasificados
+            # Crear registro de datos clasificados (estructura antigua para compatibilidad)
             classified_data = ClassifiedData(
                 raw_data=raw_data_json,
                 physical_health=physical_health,
@@ -107,6 +109,10 @@ class ClassificationService:
             )
             
             db.session.add(classified_data)
+            
+            # NUEVO: Guardar en la estructura normalizada
+            self._save_normalized_classification(message_id, classification_data, patient_id)
+            
             db.session.commit()
             
             logger.info(f"Datos clasificados guardados para mensaje ID: {message_id}")
@@ -146,6 +152,69 @@ class ClassificationService:
         
         # Si no se encuentra la categoría o no está detectada, devolver lista vacía
         return json.dumps([], ensure_ascii=False)
+    
+    # NUEVO: Método para guardar datos en la estructura normalizada
+    def _save_normalized_classification(self, message_id, classification_data, patient_id):
+        """
+        Guarda los datos clasificados en la estructura normalizada
+        
+        Args:
+            message_id (int): ID del mensaje original
+            classification_data (dict): Datos clasificados
+            patient_id (int): ID del paciente
+        """
+        try:
+            # Procesar cada categoría en la respuesta
+            for categoria in classification_data.get('categorias', []):
+                if not categoria.get('detectada', False):
+                    continue
+                    
+                # Buscar la categoría en la BD por nombre
+                category_name = categoria.get('nombre')
+                category = Category.query.filter(
+                    db.func.lower(Category.name) == db.func.lower(category_name)
+                ).first()
+                
+                if not category:
+                    # Registrar que no se encontró la categoría y continuar
+                    logger.warning(f"Categoría no encontrada: {category_name}")
+                    continue
+                    
+                # Procesar subcategorías
+                for subcategoria in categoria.get('subcategorias', []):
+                    if not subcategoria.get('detectada', False):
+                        continue
+                        
+                    # Buscar la subcategoría por nombre dentro de la categoría
+                    subcategory_name = subcategoria.get('nombre')
+                    subcategory = Subcategory.query.filter(
+                        db.func.lower(Subcategory.name) == db.func.lower(subcategory_name),
+                        Subcategory.category_id == category.id
+                    ).first()
+                    
+                    if not subcategory:
+                        # Registrar que no se encontró la subcategoría y continuar
+                        logger.warning(
+                            f"Subcategoría no encontrada: {subcategory_name} en categoría {category_name}"
+                        )
+                        continue
+                    
+                    # Solo crear el valor clasificado si hay un valor no vacío
+                    valor = subcategoria.get('valor')
+                    if valor and valor.strip():
+                        # Crear el valor clasificado
+                        classified_value = ClassifiedValue(
+                            message_id=message_id,
+                            subcategory_id=subcategory.id,
+                            value=valor,
+                            confidence=subcategoria.get('confianza', 0.0)
+                        )
+                        db.session.add(classified_value)
+                        logger.info(f"Valor clasificado guardado para subcategoría: {subcategory_name}")
+            
+        except Exception as e:
+            logger.error(f"Error guardando valores clasificados en estructura normalizada: {str(e)}")
+            # No hacer raise aquí, para permitir que siga el flujo principal si hay error
     
     def get_patient_classification_summary(self, patient_id, days=7):
         """
