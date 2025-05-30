@@ -13,7 +13,7 @@ class Patient(Base):
     # Relaciones
     caregivers = db.relationship('Caregiver', backref='patient', lazy=True)
     messages = db.relationship('Message', backref='patient', lazy=True)
-    classified_data = db.relationship('ClassifiedData', backref='patient', lazy=True)
+    
     
     def __repr__(self):
         return f"<Patient {self.name}>"

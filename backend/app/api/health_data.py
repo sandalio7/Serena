@@ -1,6 +1,5 @@
 # backend/app/api/health_data.py
 from flask import Blueprint, jsonify, request
-from ..models.classified_data import ClassifiedData
 from ..models.patient import Patient
 from ..models.message import Message
 from ..models.category import Category
@@ -463,7 +462,7 @@ def get_health_history():
     else:
         return jsonify({"error": "Período no válido. Use 'day', 'week' o 'month'"}), 400
     
-    # Construir query base usando la nueva estructura normalizada
+    # Construir query base usando solo la estructura normalizada
     query = ClassifiedValue.query.join(
         Message, ClassifiedValue.message_id == Message.id
     ).join(

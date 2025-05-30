@@ -28,7 +28,7 @@ def create_app(config_name='default'):
             from .models.patient import Patient
             from .models.caregiver import Caregiver
             from .models.message import Message
-            from .models.classified_data import ClassifiedData
+        
             
             # Crear datos de prueba si no existen
             if not Patient.query.first():

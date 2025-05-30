@@ -1,6 +1,5 @@
 # backend/app/api/financial_data.py
 from flask import Blueprint, jsonify, request
-from ..models.classified_data import ClassifiedData
 from ..models.patient import Patient
 from ..models.message import Message
 from ..models.category import Category
@@ -39,7 +38,7 @@ def get_financial_summary():
     else:  # month
         start_date = today - timedelta(days=30)
     
-    # Obtener datos de gastos usando la nueva estructura normalizada
+    # Obtener datos de gastos usando solo la estructura normalizada
     total_income = 0
     total_expenses = 0
     categories = {}
@@ -126,7 +125,7 @@ def get_expenses_by_category():
     else:  # month
         start_date = today - timedelta(days=30)
     
-    # Obtener datos de gastos usando la nueva estructura normalizada
+    # Obtener datos de gastos usando solo la estructura normalizada
     categories = {}
     
     # Buscar categoría de Gastos
@@ -207,10 +206,9 @@ def register_transaction():
     amount = float(data['amount'])
     transaction_date = data['date']
     
-    # Crear nueva entrada de ClassifiedData
+    # Crear nuevo mensaje artificial
     import datetime
     
-    # Crear mensaje artificial
     message_text = f"Registro manual: {transaction_type} de ${amount} en categoría {category_name} del {transaction_date}"
     message = Message(
         content=message_text,
@@ -221,28 +219,7 @@ def register_transaction():
     db.session.add(message)
     db.session.commit()
     
-    # Crear estructura de datos clasificados (para compatibilidad)
-    expenses_data = []
-    if transaction_type == 'expense':
-        expenses_data = [{
-            'nombre': category_name,
-            'valor': str(amount),
-            'confianza': 1.0
-        }]
-    
-    # Guardar datos clasificados (para compatibilidad)
-    classified_data = ClassifiedData(
-        raw_data=json.dumps({"manual_entry": True}),
-        expenses=json.dumps(expenses_data),
-        summary=f"Registro manual: {transaction_type} de ${amount} en {category_name}",
-        message_id=message.id,
-        patient_id=patient_id,
-        created_at=datetime.datetime.strptime(transaction_date, '%Y-%m-%d')
-    )
-    
-    db.session.add(classified_data)
-    
-    # Guardar en la nueva estructura normalizada
+    # Guardar en la estructura normalizada
     if transaction_type == 'expense':
         # Buscar categoría de gastos
         expenses_category = Category.query.filter(Category.name == 'Gastos').first()
@@ -324,7 +301,7 @@ def get_messages_history():
     else:  # month
         start_date = today - timedelta(days=30)
     
-    # Obtener datos de gastos usando la nueva estructura normalizada
+    # Obtener datos de gastos usando solo la estructura normalizada
     result = []
     
     # Buscar categoría de Gastos
@@ -362,9 +339,8 @@ def get_messages_history():
             else:
                 continue
             
-            # Buscar si hay un ClassifiedData relacionado para verificar si es editado
-            classified_data = ClassifiedData.query.filter_by(message_id=message.id).first()
-            is_edited = classified_data and getattr(classified_data, 'edited', False)
+            # Determinar si fue editado (basado en contenido del mensaje)
+            is_edited = 'Registro manual' in message.content or 'editado' in message.content.lower()
             
             # Añadir a resultados
             result.append({
@@ -377,7 +353,7 @@ def get_messages_history():
                 'date': value.created_at.isoformat(),
                 'message': message.content,
                 'message_id': message.id,
-                'edited': is_edited  # Campo edited
+                'edited': is_edited
             })
     
     return jsonify(result)
@@ -391,7 +367,7 @@ def update_transaction(transaction_id):
     if not data:
         return jsonify({'error': 'No se recibieron datos'}), 400
     
-    # Buscar la transacción en ambas estructuras
+    # Buscar la transacción en la estructura normalizada
     classified_value = ClassifiedValue.query.get(transaction_id)
     
     if not classified_value:
@@ -403,9 +379,6 @@ def update_transaction(transaction_id):
     if not message:
         return jsonify({'error': 'Mensaje asociado no encontrado'}), 404
     
-    # Buscar también en la estructura antigua para compatibilidad
-    classified_data = ClassifiedData.query.filter_by(message_id=message.id).first()
-    
     # Actualizar campos
     try:
         # Actualizar descripción si se proporcionó
@@ -414,24 +387,12 @@ def update_transaction(transaction_id):
         
         # Actualizar monto si se proporcionó
         if 'amount' in data:
-            # Actualizar en la nueva estructura
+            # Actualizar en la estructura normalizada
             classified_value.value = f"${data['amount']}"
             
-            # Actualizar también en la estructura antigua si existe
-            if classified_data:
-                # Obtener datos actuales
-                expenses_data = json.loads(classified_data.expenses)
-                
-                if expenses_data:
-                    # Actualizar el primer elemento (asumiendo que solo hay uno por mensaje)
-                    expenses_data[0]['valor'] = str(data['amount'])
-                    classified_data.expenses = json.dumps(expenses_data)
-                    
-                    # Actualizar el resumen
-                    classified_data.summary = f"Registro {data.get('edited', False) and 'editado' or 'manual'}: {message.content}"
-                
-                # Marcar como editado
-                classified_data.edited = True
+            # Actualizar el mensaje para indicar que fue editado
+            if 'editado' not in message.content.lower():
+                message.content = f"[EDITADO] {message.content}"
         
         # Guardar cambios
         db.session.commit()
@@ -443,19 +404,18 @@ def update_transaction(transaction_id):
                 'id': classified_value.id,
                 'message_id': message.id,
                 'description': message.content,
-                'edited': classified_data.edited if classified_data else True
+                'edited': True
             }
         })
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Error al actualizar la transacción: {str(e)}'}), 500
 
-
 @financial_bp.route('/transactions/<int:transaction_id>', methods=['DELETE'])
 def delete_transaction(transaction_id):
     """Eliminar una transacción"""
     try:
-        # Buscar la transacción en la nueva estructura
+        # Buscar la transacción en la estructura normalizada
         classified_value = ClassifiedValue.query.get(transaction_id)
         
         if not classified_value:
@@ -464,14 +424,8 @@ def delete_transaction(transaction_id):
         # Obtener el mensaje asociado
         message = Message.query.get(classified_value.message_id)
         
-        # Buscar también en la estructura antigua para compatibilidad
-        classified_data = ClassifiedData.query.filter_by(message_id=message.id).first()
-        
-        # Eliminar primero los datos clasificados (ambas estructuras)
+        # Eliminar primero el valor clasificado
         db.session.delete(classified_value)
-        
-        if classified_data:
-            db.session.delete(classified_data)
         
         # Si se encontró el mensaje, eliminarlo también
         if message:

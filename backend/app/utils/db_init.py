@@ -5,7 +5,7 @@ from ..extensions import db
 from ..models.patient import Patient
 from ..models.caregiver import Caregiver
 from ..models.message import Message
-from ..models.classified_data import ClassifiedData
+
 from ..config import Config
 
 def init_db():

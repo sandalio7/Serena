@@ -1,10 +1,9 @@
-#backend/app/services/classification_service.py
+# backend/app/services/classification_service.py
 import logging
 import json
 from datetime import datetime
 from app.extensions import db
 from app.models.message import Message
-from app.models.classified_data import ClassifiedData
 from app.models.category import Category
 from app.models.subcategory import Subcategory
 from app.models.classified_value import ClassifiedValue
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 class ClassificationService:
     """
     Servicio para gestionar la clasificación de mensajes y 
-    almacenamiento de datos clasificados
+    almacenamiento de datos clasificados usando la estructura normalizada
     """
     
     def __init__(self):
@@ -52,10 +51,10 @@ class ClassificationService:
             classification_result = self.gemini_service.classify_message(message_text)
             logger.info(f"Mensaje clasificado: {len(classification_result.get('categorias', []))} categorías detectadas")
             
-            # 3. Guardar datos clasificados
+            # 3. Guardar datos clasificados en estructura normalizada
             if "error" not in classification_result:
-                self._save_classification_data(message.id, classification_result, patient_id or 1)
-                logger.info(f"Datos clasificados guardados para el mensaje ID: {message.id}")
+                saved_values = self._save_normalized_classification(message.id, classification_result, patient_id or 1)
+                logger.info(f"Datos clasificados guardados: {saved_values} valores para mensaje ID: {message.id}")
             else:
                 logger.error(f"Error en clasificación para mensaje ID {message.id}: {classification_result.get('error')}")
             
@@ -72,88 +71,6 @@ class ClassificationService:
                 "status": "error"
             }
     
-    def _save_classification_data(self, message_id, classification_data, patient_id):
-        """
-        Guarda los datos clasificados en la base de datos
-        
-        Args:
-            message_id (int): ID del mensaje original
-            classification_data (dict): Datos clasificados
-            patient_id (int): ID del paciente
-        """
-        try:
-            # Convertir datos a JSON
-            raw_data_json = json.dumps(classification_data, ensure_ascii=False)
-            
-            # Extraer datos por categoría para mantener compatibilidad con la estructura anterior
-            physical_health = self._extract_category_data(classification_data, "Salud Física")
-            cognitive_health = self._extract_category_data(classification_data, "Salud Cognitiva")
-            emotional_state = self._extract_category_data(classification_data, "Estado Emocional")
-            medication = self._extract_category_data(classification_data, "Medicación")
-            expenses = self._extract_category_data(classification_data, "Gastos")
-            
-            # Obtener resumen
-            summary = classification_data.get("resumen", "")
-            
-            # Crear registro de datos clasificados (estructura antigua para compatibilidad)
-            classified_data = ClassifiedData(
-                raw_data=raw_data_json,
-                physical_health=physical_health,
-                cognitive_health=cognitive_health,
-                emotional_state=emotional_state,
-                medication=medication,
-                expenses=expenses,
-                summary=summary,
-                message_id=message_id,
-                patient_id=patient_id
-            )
-            
-            db.session.add(classified_data)
-            
-            # NUEVO: Guardar en la estructura normalizada
-            self._save_normalized_classification(message_id, classification_data, patient_id)
-            
-            db.session.commit()
-            
-            logger.info(f"Datos clasificados guardados para mensaje ID: {message_id}")
-            
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error guardando datos clasificados: {str(e)}")
-            raise
-
-    def _extract_category_data(self, classification_data, category_name):
-        """
-        Extrae datos de una categoría específica y los devuelve como JSON
-        
-        Args:
-            classification_data (dict): Datos clasificados
-            category_name (str): Nombre de la categoría a extraer
-            
-        Returns:
-            str: JSON con los datos de la categoría
-        """
-        import json
-        
-        for category in classification_data.get("categorias", []):
-            if category.get("nombre") == category_name and category.get("detectada", False):
-                # Extraer solo las subcategorías detectadas
-                subcategories = []
-                for subcategory in category.get("subcategorias", []):
-                    if subcategory.get("detectada", False):
-                        subcategories.append({
-                            "nombre": subcategory.get("nombre", ""),
-                            "valor": subcategory.get("valor", ""),
-                            "confianza": subcategory.get("confianza", 0.0)
-                        })
-                
-                # Devolver como JSON
-                return json.dumps(subcategories, ensure_ascii=False)
-        
-        # Si no se encuentra la categoría o no está detectada, devolver lista vacía
-        return json.dumps([], ensure_ascii=False)
-    
-    # NUEVO: Método para guardar datos en la estructura normalizada
     def _save_normalized_classification(self, message_id, classification_data, patient_id):
         """
         Guarda los datos clasificados en la estructura normalizada
@@ -162,14 +79,19 @@ class ClassificationService:
             message_id (int): ID del mensaje original
             classification_data (dict): Datos clasificados
             patient_id (int): ID del paciente
+            
+        Returns:
+            int: Número de valores guardados
         """
+        saved_count = 0
+        
         try:
             # Procesar cada categoría en la respuesta
             for categoria in classification_data.get('categorias', []):
                 if not categoria.get('detectada', False):
                     continue
                     
-                # Buscar la categoría en la BD por nombre
+                # Buscar la categoría en la BD por nombre (case-insensitive)
                 category_name = categoria.get('nombre')
                 category = Category.query.filter(
                     db.func.lower(Category.name) == db.func.lower(category_name)
@@ -185,7 +107,7 @@ class ClassificationService:
                     if not subcategoria.get('detectada', False):
                         continue
                         
-                    # Buscar la subcategoría por nombre dentro de la categoría
+                    # Buscar la subcategoría por nombre dentro de la categoría (case-insensitive)
                     subcategory_name = subcategoria.get('nombre')
                     subcategory = Subcategory.query.filter(
                         db.func.lower(Subcategory.name) == db.func.lower(subcategory_name),
@@ -210,11 +132,19 @@ class ClassificationService:
                             confidence=subcategoria.get('confianza', 0.0)
                         )
                         db.session.add(classified_value)
-                        logger.info(f"Valor clasificado guardado para subcategoría: {subcategory_name}")
+                        saved_count += 1
+                        logger.info(f"Valor clasificado guardado: {category_name} > {subcategory_name}: {valor}")
+            
+            # Confirmar cambios
+            db.session.commit()
+            logger.info(f"Total de valores clasificados guardados: {saved_count}")
+            
+            return saved_count
             
         except Exception as e:
-            logger.error(f"Error guardando valores clasificados en estructura normalizada: {str(e)}")
-            # No hacer raise aquí, para permitir que siga el flujo principal si hay error
+            db.session.rollback()
+            logger.error(f"Error guardando valores clasificados: {str(e)}")
+            raise
     
     def get_patient_classification_summary(self, patient_id, days=7):
         """
@@ -227,5 +157,54 @@ class ClassificationService:
         Returns:
             dict: Resumen de los datos clasificados
         """
-        # Este método se implementará en el futuro para obtener datos para el dashboard
-        pass
+        from datetime import datetime, timedelta
+        
+        try:
+            # Calcular fecha de inicio
+            start_date = datetime.now() - timedelta(days=days)
+            
+            # Obtener valores clasificados para el paciente en el período
+            values = ClassifiedValue.query.join(
+                Message, ClassifiedValue.message_id == Message.id
+            ).join(
+                Subcategory, ClassifiedValue.subcategory_id == Subcategory.id
+            ).join(
+                Category, Subcategory.category_id == Category.id
+            ).filter(
+                Message.patient_id == patient_id,
+                Message.created_at >= start_date
+            ).order_by(Message.created_at.desc()).all()
+            
+            # Agrupar por categoría
+            summary = {}
+            for value in values:
+                category_name = value.subcategory.category.name
+                subcategory_name = value.subcategory.name
+                
+                if category_name not in summary:
+                    summary[category_name] = {}
+                
+                if subcategory_name not in summary[category_name]:
+                    summary[category_name][subcategory_name] = []
+                
+                summary[category_name][subcategory_name].append({
+                    'value': value.value,
+                    'confidence': value.confidence,
+                    'date': value.created_at.isoformat(),
+                    'message_id': value.message_id
+                })
+            
+            return {
+                'patient_id': patient_id,
+                'period_days': days,
+                'summary': summary,
+                'total_values': len(values)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo resumen para paciente {patient_id}: {str(e)}")
+            return {
+                'error': str(e),
+                'patient_id': patient_id,
+                'period_days': days
+            }
