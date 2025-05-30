@@ -18,6 +18,8 @@ const HealthEventItem = ({ event, onEdit }) => {
         return '🧠';
       case 'emotional':
         return '😊';
+      case 'medication':
+        return '💊';  // Nuevo icono para medicación
       case 'autonomy':
         return '🦾';
       default:

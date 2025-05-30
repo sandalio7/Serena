@@ -436,7 +436,7 @@ def get_health_history():
     Query params:
     - patient_id: ID del paciente (obligatorio)
     - period: 'day', 'week', 'month' (opcional, default: 'day')
-    - category: 'physical', 'cognitive', 'emotional', 'medication' (opcional)
+    - category: 'physical', 'cognitive', 'emotional', 'medication', 'autonomy' (opcional)
     """
     # Obtener parámetros de query
     patient_id = request.args.get('patient_id', type=int)
@@ -474,13 +474,17 @@ def get_health_history():
         cast(Message.created_at, Date) >= start_date
     )
     
+    # FILTRO CRÍTICO: Excluir explícitamente la categoría "Gastos" del dashboard de salud
+    query = query.filter(Category.name != 'Gastos')
+    
     # Aplicar filtro de categoría si se especifica
     if category_filter:
         category_map = {
             'physical': 'Salud Física',
             'cognitive': 'Salud Cognitiva',
             'emotional': 'Estado Emocional',
-            'medication': 'Medicación'
+            'medication': 'Medicación',  # NUEVO: Soporte para filtrar por medicación
+            'autonomy': 'Autonomía'
         }
         
         category_name = category_map.get(category_filter)
@@ -502,15 +506,28 @@ def get_health_history():
         subcategory = value.subcategory
         category = subcategory.category
         
+        # Mapear nombre de categoría para el frontend
+        category_frontend_map = {
+            'Salud Física': 'physical',
+            'Salud Cognitiva': 'cognitive',
+            'Estado Emocional': 'emotional',
+            'Medicación': 'medication',
+            'Autonomía': 'autonomy'
+        }
+        
+        frontend_category = category_frontend_map.get(category.name, 'other')
+        
         # Crear item para el historial
         history_item = {
             "id": value.id,
             "date": value.created_at.strftime("%d/%m/%Y"),
             "time": value.created_at.strftime("%H:%M"),
             "original_text": message.content[:100] + "..." if len(message.content) > 100 else message.content,
-            "category": category.name,
+            "category": frontend_category,  # Categoría en formato frontend
+            "categoryName": category.name,  # Nombre completo de la categoría para mostrar
             "subcategory": subcategory.name,
             "value": value.value,
+            "description": value.value,  # Alias para compatibilidad con frontend
             "rating": int(value.confidence * 10),
             "confidence": value.confidence
         }

@@ -117,7 +117,7 @@ export const getHealthSummary = async (patientId, period = 'day') => {
  * Obtiene el historial de eventos de salud con filtros
  * @param {number} patientId - ID del paciente
  * @param {string} period - Período de tiempo ('day', 'week', 'month')
- * @param {string} category - Categoría de salud (opcional)
+ * @param {string} category - Categoría de salud ('all', 'physical', 'cognitive', 'emotional', 'medication', 'autonomy')
  * @returns {Promise<Array>} Lista de eventos de salud
  */
 export const getHealthHistory = async (patientId, period = 'day', category = 'all') => {
@@ -131,7 +131,8 @@ export const getHealthHistory = async (patientId, period = 'day', category = 'al
         'physical': 'physical',
         'cognitive': 'cognitive',
         'emotional': 'emotional',
-        'autonomy': 'physical' // Autonomía está dentro de salud física
+        'medication': 'medication',  // NUEVO: Soporte directo para medicación
+        'autonomy': 'autonomy'       // ACTUALIZADO: Mapeo directo para autonomía
       };
       
       const backendCategory = categoryMap[category];
@@ -150,8 +151,8 @@ export const getHealthHistory = async (patientId, period = 'day', category = 'al
     // Transformar los datos del backend al formato que espera el frontend
     return data.history.map(item => ({
       id: item.id,
-      category: mapBackendToFrontendCategory(item.category), // 'physical', 'cognitive', etc.
-      categoryName: item.category, // Nombre completo como "Estado Físico"
+      category: item.category, // Ya viene en formato correcto del backend
+      categoryName: item.categoryName, // Nombre completo de la categoría
       description: item.value,
       date: formatDate(item.date, item.time),
       score: item.rating
@@ -190,8 +191,8 @@ export const updateHealthEvent = async (eventId, eventData) => {
     
     return {
       id: data.id,
-      category: mapBackendToFrontendCategory(data.category),
-      categoryName: data.category,
+      category: data.category,
+      categoryName: data.categoryName,
       description: data.value,
       date: formatDate(data.date, data.time),
       score: data.rating
@@ -245,29 +246,29 @@ function getEmojiFromConclusion(conclusion) {
 }
 
 function mapBackendToFrontendCategory(backendCategory) {
+  // ACTUALIZADO: Mapeo simplificado ya que el backend ahora envía las categorías correctamente
   const categoryMap = {
-    'Estado Físico': 'physical',
-    'Salud Física': 'physical',
-    'Estado cognitivo': 'cognitive',
-    'Estado Cognitivo': 'cognitive',
-    'Estado emocional': 'emotional',
-    'Estado Emocional': 'emotional',
-    'Medicación': 'autonomy', // Tratamos medicación como parte de autonomía
-    'Autonomía': 'autonomy'
+    'physical': 'physical',
+    'cognitive': 'cognitive', 
+    'emotional': 'emotional',
+    'medication': 'medication',  // NUEVO: Soporte para medicación
+    'autonomy': 'autonomy'
   };
   
   return categoryMap[backendCategory] || 'physical';
 }
 
 function mapFrontendToBackendCategory(frontendCategory) {
+  // ACTUALIZADO: Mapeo simplificado para compatibilidad con nueva estructura
   const categoryMap = {
-    'physical': 'Estado Físico',
-    'cognitive': 'Estado Cognitivo',
+    'physical': 'Salud Física',
+    'cognitive': 'Salud Cognitiva',
     'emotional': 'Estado Emocional',
+    'medication': 'Medicación',  // NUEVO: Mapeo para medicación
     'autonomy': 'Autonomía'
   };
   
-  return categoryMap[frontendCategory] || 'Estado Físico';
+  return categoryMap[frontendCategory] || 'Salud Física';
 }
 
 function formatDate(date, time) {

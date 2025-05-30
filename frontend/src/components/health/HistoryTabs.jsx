@@ -6,7 +6,7 @@ import './HistoryTabs.css';
  * @param {Object} props - Propiedades del componente 
  * @param {string} props.activePeriod - Período activo (day, week, month, custom)
  * @param {Function} props.onPeriodChange - Función para cambiar el período
- * @param {string} props.activeCategory - Categoría activa (all, physical, cognitive, etc)
+ * @param {string} props.activeCategory - Categoría activa (all, physical, cognitive, emotional, medication, autonomy)
  * @param {Function} props.onCategoryChange - Función para cambiar la categoría
  */
 const HistoryTabs = ({ 
@@ -72,6 +72,12 @@ const HistoryTabs = ({
           onClick={() => onCategoryChange('emotional')}
         >
           Emocional
+        </button>
+        <button 
+          className={`category-tab ${activeCategory === 'medication' ? 'active' : ''}`}
+          onClick={() => onCategoryChange('medication')}
+        >
+          Medicación
         </button>
         <button 
           className={`category-tab ${activeCategory === 'autonomy' ? 'active' : ''}`}
