@@ -24,24 +24,58 @@ export const getHealthSummary = async (patientId, period = 'day') => {
       throw new Error(data.error || 'Error al obtener resumen de salud');
     }
     
-    // Verificar si hay datos válidos
-    if (!data.physicalVars || !data.physicalVars.bloodPressure || 
-        !data.physicalVars.temperature || !data.physicalVars.oxygenSaturation ||
-        (data.physicalVars.bloodPressure.value === '120/80' && 
-         data.physicalVars.temperature.value === '36.5' && 
-         data.physicalVars.oxygenSaturation.value === '98')) {
-      // Estos son valores por defecto del backend, probablemente no hay datos nuevos
+    // Verificar si hay datos válidos para signos vitales
+    // Ahora verificamos basándonos en el campo 'available' de cada signo vital
+    if (!data.physicalVars || 
+        (!data.physicalVars.bloodPressure.available && 
+         !data.physicalVars.temperature.available && 
+         !data.physicalVars.oxygenSaturation.available)) {
+      // No hay datos disponibles de signos vitales
       return {
         hasData: false,
         currentStatus: null,
         vitalSigns: null,
-        normalValues: {
+        normalValues: data.normalValues || {
           bloodPressure: { systolic: 130, diastolic: 80 },
           temperature: 36.5,
           oxygenation: 98
         },
         weeklySummary: null
       };
+    }
+    
+    // Procesar valores de signos vitales 
+    const vitalSigns = {
+      bloodPressure: data.physicalVars.bloodPressure,
+      temperature: data.physicalVars.temperature,
+      oxygenation: data.physicalVars.oxygenSaturation
+    };
+    
+    // Si algún signo vital está disponible, intentamos procesarlo para mantener retrocompatibilidad
+    if (data.physicalVars.bloodPressure.available) {
+      try {
+        const [systolic, diastolic] = data.physicalVars.bloodPressure.value.split('/');
+        vitalSigns.bloodPressure.systolic = parseInt(systolic);
+        vitalSigns.bloodPressure.diastolic = parseInt(diastolic);
+      } catch (e) {
+        console.error('Error al parsear presión arterial:', e);
+      }
+    }
+    
+    if (data.physicalVars.temperature.available) {
+      try {
+        vitalSigns.temperature.value = parseFloat(data.physicalVars.temperature.value.replace(',', '.'));
+      } catch (e) {
+        console.error('Error al parsear temperatura:', e);
+      }
+    }
+    
+    if (data.physicalVars.oxygenSaturation.available) {
+      try {
+        vitalSigns.oxygenation.value = parseInt(data.physicalVars.oxygenSaturation.value);
+      } catch (e) {
+        console.error('Error al parsear oxigenación:', e);
+      }
     }
     
     // Transformar los datos del backend al formato que espera el frontend
@@ -52,19 +86,8 @@ export const getHealthSummary = async (patientId, period = 'day') => {
         score: getScoreFromConclusion(data.generalConclusion),
         emoji: getEmojiFromConclusion(data.generalConclusion)
       },
-      vitalSigns: {
-        bloodPressure: {
-          systolic: parseInt(data.physicalVars.bloodPressure.value.split('/')[0]),
-          diastolic: parseInt(data.physicalVars.bloodPressure.value.split('/')[1])
-        },
-        temperature: parseFloat(data.physicalVars.temperature.value.replace(',', '.')),
-        oxygenation: parseInt(data.physicalVars.oxygenSaturation.value)
-      },
-      normalValues: {
-        bloodPressure: { systolic: 130, diastolic: 80 },
-        temperature: 36.5,
-        oxygenation: 98
-      },
+      vitalSigns: vitalSigns,
+      normalValues: data.normalValues,
       weeklySummary: {
         physical: {
           score: data.physicalState.rating,
@@ -204,8 +227,8 @@ function getScoreFromConclusion(conclusion) {
     case 'Malo':
       return '4';
     default:
-      return '5';
-  }
+      return '5'
+    }
 }
 
 function getEmojiFromConclusion(conclusion) {

@@ -37,28 +37,63 @@ def get_health_summary():
     else:  # month
         start_date = today - timedelta(days=30)
     
-    # Inicializar valores por defecto
-    default_response = {
-        'physicalVars': {
-            'bloodPressure': {'value': '120/81', 'status': 'Normal'},  # Cambiado de 120/80 a 120/81
-            'temperature': {'value': '36.6', 'status': 'Normal'},      # Cambiado de 36.5 a 36.6
-            'oxygenSaturation': {'value': '97', 'status': 'Normal'},   # Cambiado de 98 a 97
-            'weight': {'value': '70', 'status': 'Normal', 'bmi': '24'}
+    # Calcular fecha de hace 7 días para determinar mediciones recientes
+    week_ago = today - timedelta(days=7)
+    
+    # Inicializar valores vitales con información sobre disponibilidad
+    physical_vars = {
+        'bloodPressure': {
+            'available': False,
+            'value': None,
+            'status': None,
+            'lastMeasured': None
         },
-        'sleep': {'hours': '8', 'status': 'Normal'},
-        'cognitiveState': {
-            'rating': 8,
-            'description': 'Estado cognitivo estable'
+        'temperature': {
+            'available': False,
+            'value': None,
+            'status': None,
+            'lastMeasured': None
         },
-        'physicalState': {
-            'rating': 8,
-            'description': 'Buena movilidad general'
+        'oxygenSaturation': {
+            'available': False,
+            'value': None,
+            'status': None,
+            'lastMeasured': None
         },
-        'emotionalState': {
-            'rating': 7,
-            'description': 'Estado emocional estable'
-        },
-        'generalConclusion': 'Bueno'
+        'weight': {
+            'available': False,
+            'value': None,
+            'status': None,
+            'lastMeasured': None
+        }
+    }
+    
+    # Valores normales de referencia (siempre disponibles)
+    normal_values = {
+        'bloodPressure': { 'systolic': 130, 'diastolic': 80 },
+        'temperature': 36.5,
+        'oxygenation': 98
+    }
+    
+    # Inicializar otros datos con valores predeterminados
+    sleep_data = {
+        'hours': '8', 
+        'status': 'Normal'
+    }
+    
+    cognitive_state = {
+        'rating': 8,
+        'description': 'Estado cognitivo estable'
+    }
+    
+    physical_state = {
+        'rating': 8,
+        'description': 'Buena movilidad general'
+    }
+    
+    emotional_state = {
+        'rating': 7,
+        'description': 'Estado emocional estable'
     }
     
     # Debug: Registrar información de búsqueda
@@ -73,17 +108,18 @@ def get_health_summary():
     print(f"Encontrados {len(messages)} mensajes para el paciente {patient_id}")
     
     if not messages:
-        print("No se encontraron mensajes, devolviendo respuesta predeterminada")
-        return jsonify(default_response)
+        print("No se encontraron mensajes, devolviendo respuesta con valores no disponibles")
+        return jsonify({
+            'physicalVars': physical_vars,
+            'normalValues': normal_values,
+            'sleep': sleep_data,
+            'cognitiveState': cognitive_state,
+            'physicalState': physical_state,
+            'emotionalState': emotional_state,
+            'generalConclusion': 'Regular'
+        })
     
     message_ids = [m.id for m in messages]
-    
-    # Inicializar variables con valores predeterminados
-    physical_vars = default_response['physicalVars']
-    sleep_data = default_response['sleep']
-    cognitive_state = default_response['cognitiveState']
-    physical_state = default_response['physicalState']
-    emotional_state = default_response['emotionalState']
     
     # Contar clasificaciones por categoría (para debug)
     health_values_count = 0
@@ -116,44 +152,54 @@ def get_health_summary():
             health_values_count += len(symptom_values)
             
             for value in symptom_values:
+                message = Message.query.get(value.message_id)
                 print(f"Procesando valor: {value.value} (confianza: {value.confidence})")
                 value_text = value.value.lower()
                 
                 # Temperatura
-                if 'temperatura' in value_text:
+                if 'temperatura' in value_text and not physical_vars['temperature']['available']:
                     import re
                     temp_match = re.search(r'(\d+(?:[.,]\d+)?)', value_text)
                     if temp_match:
                         temp_value = temp_match.group(1).replace(',', '.')
                         physical_vars['temperature'] = {
+                            'available': True,
                             'value': temp_value,
-                            'status': get_status_from_confidence(value.confidence)
+                            'status': get_status_from_confidence(value.confidence),
+                            'lastMeasured': message.created_at.isoformat(),
+                            'recent': message.created_at >= week_ago
                         }
-                        print(f"Actualizada temperatura: {temp_value}")
+                        print(f"Actualizada temperatura: {temp_value}, fecha: {message.created_at}")
                 
                 # Presión arterial
-                elif 'presión' in value_text or 'presion' in value_text:
+                elif ('presión' in value_text or 'presion' in value_text) and not physical_vars['bloodPressure']['available']:
                     import re
                     bp_match = re.search(r'(\d+/\d+)', value_text)
                     if bp_match:
                         bp_value = bp_match.group(1)
                         physical_vars['bloodPressure'] = {
+                            'available': True,
                             'value': bp_value,
-                            'status': get_status_from_confidence(value.confidence)
+                            'status': get_status_from_confidence(value.confidence),
+                            'lastMeasured': message.created_at.isoformat(),
+                            'recent': message.created_at >= week_ago
                         }
-                        print(f"Actualizada presión arterial: {bp_value}")
+                        print(f"Actualizada presión arterial: {bp_value}, fecha: {message.created_at}")
                 
                 # Oxigenación
-                elif 'oxígeno' in value_text or 'oxigeno' in value_text:
+                elif ('oxígeno' in value_text or 'oxigeno' in value_text) and not physical_vars['oxygenSaturation']['available']:
                     import re
                     ox_match = re.search(r'(\d+)(?:%|\s*por\s*ciento)?', value_text)
                     if ox_match:
                         ox_value = ox_match.group(1)
                         physical_vars['oxygenSaturation'] = {
+                            'available': True,
                             'value': ox_value,
-                            'status': get_status_from_confidence(value.confidence)
+                            'status': get_status_from_confidence(value.confidence),
+                            'lastMeasured': message.created_at.isoformat(),
+                            'recent': message.created_at >= week_ago
                         }
-                        print(f"Actualizada oxigenación: {ox_value}")
+                        print(f"Actualizada oxigenación: {ox_value}, fecha: {message.created_at}")
         
         # Subcategoría: Movilidad (para estado físico)
         mobility_subcat = next((s for s in subcategories if s.name == 'Movilidad'), None)
@@ -285,6 +331,7 @@ def get_health_summary():
     # Resultado
     result = {
         'physicalVars': physical_vars,
+        'normalValues': normal_values,
         'sleep': sleep_data,
         'cognitiveState': cognitive_state,
         'physicalState': physical_state,
